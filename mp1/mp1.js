@@ -308,6 +308,24 @@ function animateBlockI(currentTime){
   }
 }
 
+/**
+ * Startup function called from html code to start the program.
+ */
+ function startup() {
+  console.log("No bugs so far...");
+  canvas = document.getElementById("myGLCanvas");
+  gl = createGLContext(canvas);
+  setupShaders(); 
+  setupBuffers();
+  const blockI = new BlockI(shaderProgram);
+  blockI.setup();
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+  // Binding required when passing functions as parameters
+  // see https://eliux.github.io/javascript/common-errors/why-this-gets-undefined-inside-methods-in-javascript/
+  requestAnimationFrame(blockI.animate.bind(blockI));
+  //requestAnimationFrame(animate); 
+}
 
 /**
  * Returns the vertices of the Block I at time t
@@ -318,74 +336,60 @@ function blockIVertices(t){
   const dy = dx;
 
   return [
-    // Top left of I
-	  -0.75-dx, 0.80+dy, 0.0,
-    -0.75-dx, 0.40+dy, 0.0,
-    -0.40-dx, 0.40+dy, 0.0,
-    -0.75-dx, 0.80+dy, 0.0,
-    -0.40-dx, 0.80+dy, 0.0,
-    -0.40-dx, 0.40+dy, 0.0,
-
-    // Top center of I
-    -0.40, 0.80, 0.0,
-     0.40, 0.80, 0.0,
-     0.40, 0.40, 0.0,
-    -0.40, 0.80, 0.0,
-    -0.40, 0.40, 0.0,
-     0.40, 0.40, 0.0,
-
-    // Top right of I
-     0.75+dx, 0.80+dy, 0.0,
-     0.75+dx, 0.40+dy, 0.0,
-     0.40+dx, 0.40+dy, 0.0,
-     0.75+dx, 0.80+dy, 0.0,
-     0.40+dx, 0.80+dy, 0.0,
-     0.40+dx, 0.40+dy, 0.0,
-
-    // Center of I
-    -0.40,  0.40, 0.0,
-    -0.40, -0.40, 0.0,
-     0.40, -0.40, 0.0,
-    -0.40,  0.40, 0.0,
-     0.40,  0.40, 0.0,
-     0.40, -0.40, 0.0,
-
-    // Bot left of I
-	  -0.75-dx, -0.80-dy, 0.0,
-    -0.75-dx, -0.40-dy, 0.0,
-    -0.40-dx, -0.40-dy, 0.0,
-    -0.75-dx, -0.80-dy, 0.0,
-    -0.40-dx, -0.80-dy, 0.0,
-    -0.40-dx, -0.40-dy, 0.0,
-
-    // Bot center of I
-    -0.40, -0.80, 0.0,
-     0.40, -0.80, 0.0,
-     0.40, -0.40, 0.0,
-    -0.40, -0.80, 0.0,
-    -0.40, -0.40, 0.0,
-     0.40, -0.40, 0.0,
-
-    // Bot right of I
-     0.75+dx, -0.80-dy, 0.0,
-     0.75+dx, -0.40-dy, 0.0,
-     0.40+dx, -0.40-dy, 0.0,
-     0.75+dx, -0.80-dy, 0.0,
-     0.40+dx, -0.80-dy, 0.0,
-     0.40+dx, -0.40-dy, 0.0,
+      // Top left of I
+      -0.75-dx, 0.80+dy, 0.0,
+      -0.75-dx, 0.40+dy, 0.0,
+      -0.40-dx, 0.40+dy, 0.0,
+      -0.75-dx, 0.80+dy, 0.0,
+      -0.40-dx, 0.80+dy, 0.0,
+      -0.40-dx, 0.40+dy, 0.0,
+  
+      // Top center of I
+      -0.40, 0.80, 0.0,
+      0.40, 0.80, 0.0,
+      0.40, 0.40, 0.0,
+      -0.40, 0.80, 0.0,
+      -0.40, 0.40, 0.0,
+      0.40, 0.40, 0.0,
+  
+      // Top right of I
+      0.75+dx, 0.80+dy, 0.0,
+      0.75+dx, 0.40+dy, 0.0,
+      0.40+dx, 0.40+dy, 0.0,
+      0.75+dx, 0.80+dy, 0.0,
+      0.40+dx, 0.80+dy, 0.0,
+      0.40+dx, 0.40+dy, 0.0,
+  
+      // Center of I
+      -0.40,  0.40, 0.0,
+      -0.40, -0.40, 0.0,
+      0.40, -0.40, 0.0,
+      -0.40,  0.40, 0.0,
+      0.40,  0.40, 0.0,
+      0.40, -0.40, 0.0,
+  
+      // Bot left of I
+          -0.75-dx, -0.80-dy, 0.0,
+      -0.75-dx, -0.40-dy, 0.0,
+      -0.40-dx, -0.40-dy, 0.0,
+      -0.75-dx, -0.80-dy, 0.0,
+      -0.40-dx, -0.80-dy, 0.0,
+      -0.40-dx, -0.40-dy, 0.0,
+  
+      // Bot center of I
+      -0.40, -0.80, 0.0,
+      0.40, -0.80, 0.0,
+      0.40, -0.40, 0.0,
+      -0.40, -0.80, 0.0,
+      -0.40, -0.40, 0.0,
+      0.40, -0.40, 0.0,
+  
+      // Bot right of I
+      0.75+dx, -0.80-dy, 0.0,
+      0.75+dx, -0.40-dy, 0.0,
+      0.40+dx, -0.40-dy, 0.0,
+      0.75+dx, -0.80-dy, 0.0,
+      0.40+dx, -0.80-dy, 0.0,
+      0.40+dx, -0.40-dy, 0.0,
   ];
-}
-
-
-/**
- * Startup function called from html code to start the program.
- */
- function startup() {
-  console.log("No bugs so far...");
-  canvas = document.getElementById("myGLCanvas");
-  gl = createGLContext(canvas);
-  setupShaders(); 
-  setupBuffers();
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  requestAnimationFrame(animate); 
 }
