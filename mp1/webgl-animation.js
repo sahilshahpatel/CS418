@@ -1,7 +1,9 @@
 class WebGLAnimation{
-    constructor(shaderProgram){
-        this.shaderProgram = shaderProgram;
+    constructor(vertexShader, fragmentShader){
+        this.vertexShader = vertexShader;
+        this.fragmentShader = fragmentShader;
 
+        this.shaderProgram = null;
         this._previousTime = 0;
         this.vertexPositionBuffer = gl.createBuffer();
         this.vertexColorBuffer = gl.createBuffer();
@@ -11,9 +13,19 @@ class WebGLAnimation{
 
 
     /** 
-     * Sets up this object to be the displayed animation
+     * Sets up shaders
      */
-    setup(){
+    setup(){        
+        // Link the shaders together into a program.
+        this.shaderProgram = gl.createProgram();
+        gl.attachShader(this.shaderProgram, this.vertexShader);
+        gl.attachShader(this.shaderProgram, this.fragmentShader);
+        gl.linkProgram(this.shaderProgram);
+
+        if (!gl.getProgramParameter(this.shaderProgram, gl.LINK_STATUS)) {
+            alert("Failed to setup shaders");
+        }
+        
         gl.useProgram(this.shaderProgram);
 
         gl.bindVertexArray(this.vertexArrayObject);
@@ -54,6 +66,15 @@ class WebGLAnimation{
         
         // Unbind the vertex array object to be safe.
         gl.bindVertexArray(null);
+    }
+
+    /**
+     * Starts this animation
+     */
+    start(){
+        // Binding required when passing functions as parameters
+        // see https://eliux.github.io/javascript/common-errors/why-this-gets-undefined-inside-methods-in-javascript/
+        requestAnimationFrame(this.animate.bind(this));
     }
 
     /**

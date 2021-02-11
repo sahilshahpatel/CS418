@@ -1,10 +1,17 @@
 class BlockI extends WebGLAnimation{
-    constructor(shaderProgram){
-        super(shaderProgram);
+    constructor(vertexShader, fragmentShader){
+        super(vertexShader, fragmentShader);
     }
 
+    /**
+     * Sets up WebGL for this animation's shaders and buffers
+     */
     setup(){
+        /* Setup shaders */
         super.setup();
+
+
+        /* Setup Buffers */
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
 
@@ -39,6 +46,11 @@ class BlockI extends WebGLAnimation{
                                this.vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
     }
 
+    /**
+     * Changes the vertexPositionBuffer and modelViewMatrix to produce animation in WebGL canvas
+     * @param {Number} currentTime 
+     * @param {Number} deltaTime 
+     */
     _animate(currentTime, deltaTime){
         // Animation phase periods
         const pre_jump = 0.5;
