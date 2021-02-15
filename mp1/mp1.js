@@ -133,17 +133,17 @@ function startup() {
   const select = document.getElementById("animations");
   select.addEventListener("change", start_animation)
 
-  start_animation();
+  start_animation(true);
 }
 
-function start_animation() {
+function start_animation(test) {
   switch(document.getElementById("animations").value){
     case "blockI":
-      blockI.setup();
+      slinky.stop();
       blockI.start();
       break;
     case "slinky":
-      slinky.setup();
+      blockI.stop();
       slinky.start();
       break;
   }

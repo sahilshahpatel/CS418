@@ -30,6 +30,9 @@ class WebGLAnimation{
         this.vertexPositionBuffer = gl.createBuffer();
         this.vertexColorBuffer = gl.createBuffer();
         this.modelViewMatrix = glMatrix.mat4.create();
+
+        // Animation frame ID
+        this.requestAnimationFrameID = undefined;
     }
 
 
@@ -76,9 +79,20 @@ class WebGLAnimation{
      * Starts this animation
      */
     start(){
+        this.setup();
+
         // Binding required when passing functions as parameters
         // see https://eliux.github.io/javascript/common-errors/why-this-gets-undefined-inside-methods-in-javascript/
-        requestAnimationFrame(this.animate.bind(this));
+        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+    }
+
+    /**
+     * Stops this animation
+     */
+    stop(){
+        cancelAnimationFrame(this.requestAnimationFrameID);
+        this.requestAnimationFrameID = undefined;
+        gl.useProgram(null);
     }
 
     /**
@@ -105,6 +119,6 @@ class WebGLAnimation{
         
         // Binding required when passing functions as parameters
         // see https://eliux.github.io/javascript/common-errors/why-this-gets-undefined-inside-methods-in-javascript/
-        requestAnimationFrame(this.animate.bind(this));
+        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
     }
 }
