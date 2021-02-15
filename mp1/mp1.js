@@ -133,10 +133,13 @@ function startup() {
   const select = document.getElementById("animations");
   select.addEventListener("change", start_animation)
 
-  start_animation(true);
+  start_animation();
 }
 
-function start_animation(test) {
+/**
+ * Starts selected animation
+ */
+function start_animation() {
   switch(document.getElementById("animations").value){
     case "blockI":
       slinky.stop();
