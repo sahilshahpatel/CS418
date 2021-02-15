@@ -3,33 +3,19 @@ class WebGLAnimation{
         this.vertexShader = vertexShader;
         this.fragmentShader = fragmentShader;
 
-        this.shaderProgram = null;
-        this._previousTime = 0;
-        this.vertexPositionBuffer = gl.createBuffer();
-        this.vertexColorBuffer = gl.createBuffer();
-        this.modelViewMatrix = glMatrix.mat4.create();
         this.vertexArrayObject = gl.createVertexArray();
-    }
+        gl.bindVertexArray(this.vertexArrayObject)
 
-
-    /** 
-     * Sets up shaders
-     */
-    setup(){        
         // Link the shaders together into a program.
         this.shaderProgram = gl.createProgram();
-        gl.attachShader(this.shaderProgram, this.vertexShader);
-        gl.attachShader(this.shaderProgram, this.fragmentShader);
+        gl.attachShader(this.shaderProgram, vertexShader);
+        gl.attachShader(this.shaderProgram, fragmentShader);
         gl.linkProgram(this.shaderProgram);
 
         if (!gl.getProgramParameter(this.shaderProgram, gl.LINK_STATUS)) {
             alert("Failed to setup shaders");
         }
-        
-        gl.useProgram(this.shaderProgram);
 
-        gl.bindVertexArray(this.vertexArrayObject);
-            
         // Query the index of each attribute in the list of attributes maintained
         // by the GPU. 
         this.shaderProgram.vertexPositionAttribute =
@@ -39,7 +25,25 @@ class WebGLAnimation{
         this.shaderProgram.modelViewMatrixUniform =
             gl.getUniformLocation(this.shaderProgram, "uModelViewMatrix");
 
-        // Enable each attribute we are using in the VAO.  
+        this.clear_color = [0, 0, 0, 1];
+        this._previousTime = 0;
+        this.vertexPositionBuffer = gl.createBuffer();
+        this.vertexColorBuffer = gl.createBuffer();
+        this.modelViewMatrix = glMatrix.mat4.create();
+    }
+
+
+    /** 
+     * Sets up shaders
+     */
+    setup(){
+        gl.clearColor(...this.clear_color);
+        
+        gl.useProgram(this.shaderProgram);
+
+        gl.bindVertexArray(this.vertexArrayObject);
+
+        // Enable each attribute we are using in the VAO.
         gl.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
         gl.enableVertexAttribArray(this.shaderProgram.vertexColorAttribute);
     }

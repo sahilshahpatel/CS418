@@ -11,6 +11,12 @@ var gl;
 /** @global The HTML5 canvas we draw on */
 var canvas;
 
+/** @global The Block I animation object */
+var blockI;
+
+/** @global The Slinky animation object */
+var slinky;
+
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -29,6 +35,17 @@ function degToRad(degrees) {
  */
 function lerp(start, end, t){
   return start + t*(end-start);
+}
+
+
+/**
+ * Returns a number in [0, 1] representing how far t is in the interval [min, max]
+ * @param {Number} t 
+ * @param {Number} max 
+ * @param {Number} min 
+ */
+function utime(t, min, max){
+  return (t - min)/(max - min);
 }
 
 
@@ -98,18 +115,37 @@ function loadShaderFromDOM(id) {
   return shader;
 }
 
+
 /**
  * Startup function called from html code to start the program.
  */
- function startup() {
+function startup() {
   canvas = document.getElementById("myGLCanvas");
-  gl = createGLContext(canvas);
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl = createGLContext(canvas); 
 
   let vertexShader = loadShaderFromDOM("shader-vs");
   let fragmentShader = loadShaderFromDOM("shader-fs");
 
-  const blockI = new BlockI(vertexShader, fragmentShader);
-  blockI.setup();
-  blockI.start();
+  // Choose between animations
+  blockI = new BlockI(vertexShader, fragmentShader);
+  slinky = new Slinky(vertexShader, fragmentShader);
+
+  const select = document.getElementById("animations");
+  select.addEventListener("change", start_animation)
+
+  start_animation();
 }
+
+function start_animation() {
+  switch(document.getElementById("animations").value){
+    case "blockI":
+      blockI.setup();
+      blockI.start();
+      break;
+    case "slinky":
+      slinky.setup();
+      slinky.start();
+      break;
+  }
+}
+
