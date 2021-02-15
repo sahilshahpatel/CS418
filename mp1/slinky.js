@@ -65,8 +65,7 @@ class Slinky extends WebGLAnimation{
         // Reset vertex position and color buffers
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
         let slinky = this.slinkyVertices(t);
-        let stairs = this.stairsVertices();
-        const vertices = slinky.concat(stairs);
+        const vertices = slinky.concat(this.stairs);
         this.vertexPositionBuffer.numberOfItems = vertices.length / this.vertexPositionBuffer.itemSize;
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
 
