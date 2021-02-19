@@ -14,9 +14,12 @@ window.onload = function(){
         "focalLength": 1,
     }
 
-    let scene = [
-        new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5),
-    ]
+    let scene = {
+        "background": glMatrix.vec4.fromValues(0.5, 0.5, 0.5, 1),
+        "objects": [
+            new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5),
+        ]
+    }
 
     renderScene(scene, cam, img);
     context.putImageData(img, 0, 0);
@@ -36,7 +39,8 @@ function renderScene(scene, cam, img){
             const v = y / (img.height - 1);
             
             const ray = rayFromFrag(cam, viewport, u, v);
-            const color = getColor(ray, scene);
+            let color = getColor(ray, scene);
+            glMatrix.vec4.scale(color, color, MAX_COLOR);
             
             setPixel(img, x, y, color); 
         }
@@ -46,18 +50,26 @@ function renderScene(scene, cam, img){
 }
 
 function getColor(ray, scene){
-    // Default background is black
-    let color = [0, 0, 0, MAX_COLOR]
+    // Default background if none is supplied
+    let color = glMatrix.vec4.fromValues(0.5, 0.5, 0.5, 1);
+    if(scene.background != null){
+        color = glMatrix.vec4.clone(scene.background);
+    }
     
-    // TODO: loop over all objects?
-    let sphere = scene[0];
-    if(sphere.hit(ray, 0, 100)){
-        color[0] = MAX_COLOR;
-    }
-    else{
-        const up = glMatrix.vec3.fromValues(0, 1, 0);
-        color[2] = 0.5*(1+glMatrix.vec3.dot(ray.dir, up)) * MAX_COLOR;
-    }
+    let n = null;
+    let dist2 = 0;
+    scene.objects.forEach(function(obj){
+        const temp = obj.hit(ray, 0, 100);
+        if(temp != null){
+            const new_dist2 = glMatrix.vec3.sqrDist(temp.origin, ray.origin);
+            if(n == null || new_dist2 < dist2){
+                n = temp;
+                dist2 = new_dist2;
+    
+                color = colorFromNormal(n.dir);
+            }
+        } 
+    });
 
     return color;
 }

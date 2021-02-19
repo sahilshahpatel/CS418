@@ -29,10 +29,12 @@ class Sphere extends Hittable{
         const discriminant = b*b - 4*a*c;
 
         if(discriminant > 0){
-            let t = (-b + Math.sqrt(discriminant))/(2*a);
-            //console.log(ray.at(t));
+            const t = (-b - Math.sqrt(discriminant))/(2*a);
+            const p = ray.at(t);
+            const n = glMatrix.vec3.create();
+            glMatrix.vec3.sub(n, p, this.center);
+            return new Ray(p, n);
         }
-
-        return discriminant > 0;
+        return null;
     }
 }

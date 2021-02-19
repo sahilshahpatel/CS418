@@ -94,3 +94,16 @@ function rayFromFrag(cam, viewport, u, v){
 
     return new Ray(cam.pos, dir);
 }
+
+
+function colorFromNormal(n){
+    color = glMatrix.vec3.clone(n);
+    glMatrix.vec3.add(color, color, glMatrix.vec3.fromValues(1, 1, 1));
+    glMatrix.vec3.scale(color, color, 0.5);
+    
+    color = glMatrix.vec4.fromValues(
+        color[0], color[1], color[2], 1
+    );
+
+    return color;
+}
