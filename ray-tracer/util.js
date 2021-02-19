@@ -45,11 +45,52 @@ function getPixel(img, x, y){
 }
 
 
-// Helper function to convert canvas coordinates to world coordinates
-function canvasToWorld(cam, focalLength, x, y, width, height){      
+function getViewport(cam, imgWidth, imgHeight){
+    const height = 2 * cam.focalLength / Math.cos(cam.fov / 2);
+    const width = imgWidth / imgHeight * height;
+
+    const y = glMatrix.vec3.create();
+    glMatrix.vec3.scale(y, cam.up, -1);
+    const x = glMatrix.vec3.create();
+    glMatrix.vec3.cross(x, cam.dir, cam.up);
+
+    return {
+        "width": width,
+        "height": height,
+        "basis": {
+            "x": x,
+            "y": y
+        }
+    }
+}
+
+
+// Helper function to convert canvas UVs to world coordinates
+function uvToWorld(cam, viewport, u, v){
+    // Get center of viewport
     let pos = glMatrix.vec3.clone(cam.dir);
-    glMatrix.vec3.scale(pos, pos, focalLength);
+    glMatrix.vec3.scale(pos, pos, cam.focalLength); 
     glMatrix.vec3.add(pos, pos, cam.pos);
-    glMatrix.vec3.add(pos, pos, glMatrix.vec3.fromValues(-width/2 + x + 0.5, height/2 - y + 0.5, 0));
+
+    // Move alone viewport basis vectors
+    let dx = glMatrix.vec3.create();
+    glMatrix.vec3.scale(dx, viewport.basis.x, (u - 0.5)*viewport.width);
+    let dy = glMatrix.vec3.create();
+    glMatrix.vec3.scale(dy, viewport.basis.y, (v - 0.5)*viewport.height);
+
+    glMatrix.vec3.add(pos, pos, dx);
+    glMatrix.vec3.add(pos, pos, dy);
+
     return pos;
+}
+
+
+function rayFromFrag(cam, viewport, u, v){
+    const fragPos = uvToWorld(cam, viewport, u, v);
+
+    const dir = glMatrix.vec3.create();
+    glMatrix.vec3.sub(dir, fragPos, cam.pos);
+    glMatrix.vec3.normalize(dir, dir);
+
+    return new Ray(cam.pos, dir);
 }
