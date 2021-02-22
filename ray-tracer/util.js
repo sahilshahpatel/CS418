@@ -96,3 +96,36 @@ function colorFromNormal(n){
 
     return color;
 }
+
+
+function randomPointOnUnitSphere(){
+    // From https://mathworld.wolfram.com/SpherePointPicking.html
+    let u = Math.random();
+    let v = Math.random();
+
+    let theta = 2*Math.PI*u;
+    let phi = Math.acos(2*v-1);
+
+    let x = Math.sin(theta)*Math.cos(phi);
+    let y = Math.sin(theta)*Math.sin(phi);
+    let z = Math.cos(theta);
+    
+    let p = glMatrix.vec3.fromValues(x, y, z);
+    return p;
+}
+
+
+function skybox(ray){
+    let u = glMatrix.vec3.clone(ray.dir);
+    let t = 0.5*u[1] + 1;
+
+    let white = glMatrix.vec4.fromValues(1, 1, 1, 1);
+    glMatrix.vec4.scale(white, white, 1-t);
+    let blue = glMatrix.vec4.fromValues(0.5, 0.7, 1, 1);
+    glMatrix.vec4.scale(blue, blue, t);
+
+    let c = glMatrix.vec4.create();
+    glMatrix.vec4.add(c, white, blue);
+
+    return c;
+}

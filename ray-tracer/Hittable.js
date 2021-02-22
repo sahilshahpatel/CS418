@@ -1,26 +1,14 @@
 class HitRecord{
-    constructor(t, point, normal, color){
+    constructor(t, point, normal){
         this.t = t;
         this.point = glMatrix.vec3.clone(point);
         this.normal = glMatrix.vec3.clone(normal);
-        this.color = glMatrix.vec4.clone(color);
     }
 }
 
 class Hittable{
-    constructor(texture){
-        if(!texture){
-            // Defaults to invisible
-            this.texture = function(p){ return glMatrix.vec4.create();}
-        }
-        else if(texture instanceof Function || typeof texture === "function"){
-            // Accepts texture as function returning color
-            this.texture = texture;
-        }
-        else{
-            // Accepts texture as single color
-            this.texture = function(p){ return glMatrix.vec4.clone(texture)};
-        }
+    constructor(material){
+        this.material = material
     }
 
     hit(ray, tmin, tmax){ return null; }
@@ -44,13 +32,17 @@ class Sphere extends Hittable{
 
         if(discriminant > 0){
             const t = (-b - Math.sqrt(discriminant))/(2*a);
+            
+            if(t < tmin || t > tmax){
+                return null;
+            }
+
             const p = ray.at(t);
             const n = glMatrix.vec3.create();
             glMatrix.vec3.sub(n, p, this.center);
             glMatrix.vec3.normalize(n, n);
 
-            const color = this.texture(p);
-            return new HitRecord(t, p, n, color);
+            return new HitRecord(t, p, n);
         }
         return null;
     }
