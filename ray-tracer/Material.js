@@ -9,7 +9,7 @@ class Material{
     constructor(texture, reflectivity){
         if(!texture){
             // Defaults to invisible
-            this.texture = function(p){ return glMatrix.vec4.create();}
+            this.texture = function(p, n){ return glMatrix.vec4.create();}
         }
         else if(texture instanceof Function || typeof texture === "function"){
             // Accepts texture as function returning color
@@ -17,14 +17,14 @@ class Material{
         }
         else{
             // Accepts texture as single color
-            this.texture = function(p){ return glMatrix.vec4.clone(texture)};
+            this.texture = function(p, n){ return glMatrix.vec4.clone(texture)};
         }
 
         this.reflectivity = reflectivity;
     }
 
     // Won't reflect at all
-    scatter(p, n){ return null; }
+    scatter(ray, p, n){ return null; }
 }
 
 class Lambertian extends Material{
@@ -32,12 +32,40 @@ class Lambertian extends Material{
         super(texture, reflectivity);
     }
 
-    scatter(p, n){
+    scatter(ray, p, n){
         let dir = randomPointOnUnitSphere();
         glMatrix.vec3.add(dir, dir, n);
         glMatrix.vec3.normalize(dir, dir);
 
+        // Cover degenerate case
+        if(nearZero(dir)){ dir = n; }
+
         let r = new Ray(p, dir);
+        return new RayScatter(r, 1 - this.reflectivity);
+    }
+}
+
+class Metal extends Material{
+    constructor(texture, reflectivity, fuzz){
+        super(texture, reflectivity);
+        this.fuzz = fuzz;
+    }
+
+    scatter(ray, p, n){
+        // Get perfectly reflected ray
+        let v = reflect(ray.dir, n);
+
+        // Adjust for fuzz
+        if(this.fuzz > 0){
+            let offset = glMatrix.vec3.create();
+            glMatrix.vec3.scale(offset, randomPointOnUnitSphere(), this.fuzz);
+            glMatrix.vec3.add(v, v, offset);
+
+            // Check if fuzz made scatter fall inside of object
+            if(glMatrix.vec3.dot(v, n) <= 0){ return null; }
+        }
+        
+        let r = new Ray(p, v);
         return new RayScatter(r, 1 - this.reflectivity);
     }
 }

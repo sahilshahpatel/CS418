@@ -54,37 +54,6 @@ function clamp(val, min, max){
 }
 
 
-// Helper function to convert canvas UVs to world coordinates
-function uvToWorld(cam, u, v){
-    // Get center of viewport
-    let pos = glMatrix.vec3.clone(cam.dir);
-    glMatrix.vec3.scale(pos, pos, cam.focalLength); 
-    glMatrix.vec3.add(pos, pos, cam.pos);
-
-    // Move alone viewport basis vectors
-    let dx = glMatrix.vec3.create();
-    glMatrix.vec3.scale(dx, cam.viewport.basis.x, (u - 0.5)*cam.viewport.width);
-    let dy = glMatrix.vec3.create();
-    glMatrix.vec3.scale(dy, cam.viewport.basis.y, (v - 0.5)*cam.viewport.height);
-
-    glMatrix.vec3.add(pos, pos, dx);
-    glMatrix.vec3.add(pos, pos, dy);
-
-    return pos;
-}
-
-
-function rayFromFrag(cam, u, v){
-    const fragPos = uvToWorld(cam, u, v);
-
-    const dir = glMatrix.vec3.create();
-    glMatrix.vec3.sub(dir, fragPos, cam.pos);
-    glMatrix.vec3.normalize(dir, dir);
-
-    return new Ray(cam.pos, dir);
-}
-
-
 function colorFromNormal(n){
     color = glMatrix.vec3.clone(n);
     glMatrix.vec3.add(color, color, glMatrix.vec3.fromValues(1, 1, 1));
@@ -112,6 +81,30 @@ function randomPointOnUnitSphere(){
     
     let p = glMatrix.vec3.fromValues(x, y, z);
     return p;
+}
+
+
+function nearZero(vec){
+    let e = 1e-8;
+    return Math.abs(vec[0]) < e 
+        && Math.abs(vec[1]) < e 
+        && Math.abs(vec[2]) < e;
+}
+
+
+/**
+ * Returns v reflected about n
+ * @param {vec3} v 
+ * @param {vec3} n 
+ */
+function reflect(v, n){
+    let d = glMatrix.vec3.dot(v, n);
+
+    let r = glMatrix.vec3.create();
+    glMatrix.vec3.scale(r, n, 2*d);
+    glMatrix.vec3.sub(r, v, r);
+    
+    return r;
 }
 
 

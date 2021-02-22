@@ -14,28 +14,35 @@ window.onload = function(){
         antialiasing: 10,
         bounceLimit: 10
     }
+
+    // Putting camera further from scene with smaller FOV reduces distortion
     cam = new Camera(
-        glMatrix.vec3.fromValues(0, 0, 0),
+        glMatrix.vec3.fromValues(0, 0, 2),
         glMatrix.vec3.fromValues(0, 0, -1),
         glMatrix.vec3.fromValues(0, 1, 0),
-        Math.PI/2,
-        1,
+        Math.PI/4,  // FOV
+        1e-5,       // Near clipping distance (cannot be 0!)
         canvas.width,
         canvas.height
     );
 
-    matGray = new Lambertian(glMatrix.vec4.fromValues(0.5, 0.5, 0.5, 1), 0.25);
-    matRed = new Lambertian(glMatrix.vec4.fromValues(1, 0, 0, 1), 0.5);
+    matNormals = new Material(function(p, n){return colorFromNormal(n)}, 0);
+    matGray = new Lambertian(glMatrix.vec4.fromValues(0.5, 0.5, 0.5, 1), 0.05);
+    matRed = new Lambertian(glMatrix.vec4.fromValues(1, 0, 0, 1), 0.25);
+    matGreen = new Lambertian(glMatrix.vec4.fromValues(0, 1, 0, 1), 0.25);
+    matMetal = new Metal(glMatrix.vec4.fromValues(0.8, 0.8, 0.8, 1), 0.75, 0.3);
 
     scene = {
         "objects": [
+            new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray),
             new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5, matRed),
-            new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray)
+            new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matMetal),
         ]
     }
 
     render();
 };
+
 
 /**
  * Renders the scene to HTML canvas
@@ -47,6 +54,7 @@ function render(){
     renderScene(scene, cam, img);
     context.putImageData(img, 0, 0);
 }
+
 
 /**
  * Renders scene to the given ImageData
@@ -63,7 +71,7 @@ function renderScene(scene, cam, img){
                 const u = (x + Math.random()) / (img.width  - 1);
                 const v = (y + Math.random()) / (img.height - 1);
                 
-                const ray = rayFromFrag(cam, u, v);
+                const ray = cam.uvToRay(u, v);
                 glMatrix.vec4.add(color, color, getColor(ray, scene, settings.bounceLimit));
             }
             glMatrix.vec4.scale(color, color, 1/(settings.antialiasing+1));
@@ -96,21 +104,19 @@ function getColor(ray, scene, depth){
     // Default background is skybox
     let color = skybox(ray);
     
-    let hitObj = null;
-    let hitRec = null;
+    let hit = null;
     scene.objects.forEach(function(obj){
         const new_hit = obj.hit(ray, 0.001, 100);
-        if(new_hit !== null && (hitRec === null || new_hit.t < hitRec.t)){
-            hitRec = new_hit;
-            hitObj = obj;
+        if(new_hit !== null && (hit === null || new_hit.t < hit.t)){
+            hit = new_hit;
         }
     });
 
-    if(hitRec != null){
-        color = hitObj.material.texture(hitRec.point);
+    if(hit != null){
+        color = hit.material.texture(hit.point, hit.normal);
 
         // Recurse for reflections
-        let scatter = hitObj.material.scatter(hitRec.point, hitRec.normal);
+        let scatter = hit.material.scatter(ray, hit.point, hit.normal);
         if(!scatter || !scatter.ray || scatter.attenuation === 0){ return color; }
         
         glMatrix.vec4.scale(color, color, scatter.attenuation);
