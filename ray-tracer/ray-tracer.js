@@ -4,6 +4,9 @@ var settings;
 var cam;
 var scene;
 
+var threads = [];
+
+
 const WHITE = glMatrix.vec3.fromValues(1, 1, 1);
 const BLACK = glMatrix.vec3.fromValues(0, 0, 0);
 
@@ -15,7 +18,7 @@ window.onload = function(){
     canvas = document.getElementById("canvas");
     settings = {
         antialiasing: 10,
-        bounceLimit: 10
+        bounceLimit: 5
     }
 
     // Putting camera further from scene with smaller FOV reduces distortion
@@ -54,43 +57,51 @@ window.onload = function(){
 function render(){    
     let context = canvas.getContext("2d");
     let img = context.createImageData(canvas.width, canvas.height);
-
-    renderScene(scene, cam, img);
-    context.putImageData(img, 0, 0);
+    renderScene(scene, cam, img).then(() => {
+        context.putImageData(img, 0, 0);
+    });
 }
 
 
 /**
  * Renders scene to the given ImageData
+ * @param {Object} scene
+ * @param {Camera} cam
  * @param {ImageData} img
+ * @returns A Promise which will resolve when the image has been rendered
  */
 function renderScene(scene, cam, img){
-    // Main loop over each pixel
+    let tasks = [];
     for(let x = 0; x < img.width; ++x){
         for(let y = 0; y < img.height; ++y){
-            let color = glMatrix.vec3.create();
-            
-            // Multiple samples per pixel if antialiasing is on
-            for(let s = 0; s < settings.antialiasing + 1; ++s){
-                const u = (x + Math.random()) / (img.width  - 1);
-                const v = (y + Math.random()) / (img.height - 1);
-                
-                const ray = cam.uvToRay(u, v);
-                glMatrix.vec3.add(color, color, getColor(ray, scene, settings.bounceLimit));
-            }
-            glMatrix.vec3.scale(color, color, 1/(settings.antialiasing+1));
+            let renderFrag = (scene, cam, img, x, y) => {
+                let color = glMatrix.vec3.create();
 
-            // Gamma correction
-            let gamma = 0.45;
-            color[0] = Math.pow(color[0], gamma);
-            color[1] = Math.pow(color[1], gamma);
-            color[2] = Math.pow(color[2], gamma);
+                // Multiple samples per pixel if antialiasing is on
+                for(let s = 0; s < settings.antialiasing + 1; ++s){
+                    const u = (x + Math.random()) / (img.width  - 1);
+                    const v = (y + Math.random()) / (img.height - 1);
+                    
+                    const ray = cam.uvToRay(u, v);
+                    glMatrix.vec3.add(color, color, getColor(ray, scene, settings.bounceLimit));
+                }
+                glMatrix.vec3.scale(color, color, 1/(settings.antialiasing+1));
 
-            setPixel(img, x, y, color);
+                // Gamma correction
+                let gamma = 0.45;
+                color[0] = Math.pow(color[0], gamma);
+                color[1] = Math.pow(color[1], gamma);
+                color[2] = Math.pow(color[2], gamma);
+
+                setPixel(img, x, y, color);
+            };
+
+            tasks.push(() => renderFrag(scene, cam, img, x, y));
         }
     }
-    
-    return img;
+
+    let queue = new ConcurrentTaskQueue(tasks, 1024);
+    return queue.runTasks();
 }
 
 
