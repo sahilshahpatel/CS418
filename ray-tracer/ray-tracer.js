@@ -17,7 +17,7 @@ const BLACK = glMatrix.vec3.fromValues(0, 0, 0);
 window.onload = function(){
     canvas = document.getElementById("canvas");
     settings = {
-        antialiasing: 10,
+        antialiasing: 25,
         bounceLimit: 5
     }
 
@@ -36,14 +36,14 @@ window.onload = function(){
     matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5), 0.05);
     matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0), 0.25);
     matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0), 0.25);
-    matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.75, 0.3);
-    matGlass = new Dielectric(glMatrix.vec3.fromValues(0, 0, 0), 1, 1.5)
+    matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.3);
+    matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
 
     scene = {
         "objects": [
             new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray),
             new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5, matRed),
-            new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matNormals),
+            new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matGlass),
         ]
     }
 

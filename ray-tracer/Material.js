@@ -86,16 +86,24 @@ class Dielectric extends Material{
                 ? this.eta : 1/this.eta;
 
         let dir;
-        if(etaRatio * sinTheta > 1){
-            // No solution to Snell's Law exists -> must reflect
+
+        // Reflect if we must, or with some probability
+        if(etaRatio * sinTheta > 1 || this.reflectance(cosTheta, etaRatio) > Math.random()){
             dir = reflect(ray.dir, n);
         }
         else{
-            // Can refract
+            // Otherwise refract
             dir = refract(ray.dir, n, etaRatio);
         }
 
         let r = new Ray(p, dir);
         return new RayScatter(r, this.texture(p, n));
+    }
+
+    reflectance(cosine, etaRatio){
+        // Schlick's approximation for reflectance at varying angles
+        let r = (1 - etaRatio) / (1 + etaRatio);
+        r = r*r;
+        return r + (1 - r)*Math.pow(1-cosine, 5);
     }
 }
