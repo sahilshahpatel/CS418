@@ -8,16 +8,20 @@ class RayScatter{
 class Material{
     constructor(texture){
         if(!texture){
-            // Defaults to invisible
-            this.texture = function(p, n){ return glMatrix.vec3.create(); }
+            // Defaults to black
+            this.texture = () => { return BLACK }
         }
         else if(texture instanceof Function || typeof texture === "function"){
             // Accepts texture as function returning color
             this.texture = texture;
         }
+        else if(texture instanceof ImageData){
+            // Accepts texture as image
+            this.texture = (uv) => { return imageTexture(texture, uv); }
+        }
         else{
             // Accepts texture as single color
-            this.texture = function(p, n){ return glMatrix.vec3.clone(texture); };
+            this.texture = () => { return glMatrix.vec3.clone(texture); };
         }
     }
 

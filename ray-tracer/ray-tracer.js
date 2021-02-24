@@ -20,31 +20,44 @@ window.onload = function(){
 
     // Putting camera further from scene with smaller FOV reduces distortion
     cam = new Camera(
-        glMatrix.vec3.fromValues(5, 5, 4),      // Camera pos
+        glMatrix.vec3.fromValues(0, 0, 2),      // Camera pos
         glMatrix.vec3.fromValues(0, 0, -1),     // LookAt point
         glMatrix.vec3.fromValues(0, 1, 0),
         Math.PI/4,  // FOV
-        1,          // Aperture
+        0,          // Aperture
         canvas.width,
         canvas.height
     );
 
-    matNormals = new Material(function(p, n){ return colorFromNormal(n) });
+    /* Materials that can be made instantly */
+    matNormals = new Material(function(uv, p, n){ return colorFromNormal(n) });
     matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5), 0.05);
     matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0), 0.25);
     matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0), 0.25);
     matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.3);
     matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
 
-    scene = {
-        "objects": [
-            new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray),
-            new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5, matRed),
-            new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matNormals),
-        ]
-    }
+    /* Materials made with promises */
+    let promises = [];
+    // Earth texture from http://planetpixelemporium.com/earth.html
+    promises.push(imageDataFromFile('earthmap1k.jpg'));
+    
+    Promise.all(promises).then( ([earthImgData]) => {
+        // Create promise-based materials
+        matEarth = new Material(earthImgData);
 
-    render();
+        // Create scene
+        scene = {
+            "objects": [
+                new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray),
+                new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5, matRed),
+                new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matEarth),
+            ]
+        }
+
+        // Render scene
+        render();
+    });
 };
 
 
@@ -127,7 +140,7 @@ function getColor(ray, scene, depth){
         // Recurse for reflections
         let scatter = hit.material.scatter(ray, hit.point, hit.normal);
         if(!scatter || !scatter.ray || glMatrix.vec3.exactEquals(scatter.color, BLACK)){ 
-            return hit.material.texture(hit.point, hit.normal);
+            return hit.material.texture(hit.uv, hit.point, hit.normal);
         }
         
 

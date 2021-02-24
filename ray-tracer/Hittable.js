@@ -1,9 +1,10 @@
 class HitRecord{
-    constructor(t, point, normal, material){
+    constructor(t, point, normal, material, uv){
         this.t = t;
         this.point = glMatrix.vec3.clone(point);
         this.normal = glMatrix.vec3.clone(normal);
         this.material = material;
+        this.uv = glMatrix.vec2.clone(uv);
     }
 }
 
@@ -14,6 +15,7 @@ class Hittable{
 
     hit(ray, tmin, tmax){ return null; }
     normal(p){ return null; }
+    uv(p){ return null; }
 }
 
 class Sphere extends Hittable{
@@ -28,6 +30,19 @@ class Sphere extends Hittable{
         glMatrix.vec3.sub(n, p, this.center);
         glMatrix.vec3.normalize(n, n);
         return n;
+    }
+
+    uv(point){
+        // Shift p to be around unit sphere at origin
+        let p = glMatrix.vec3.create();
+        glMatrix.vec3.sub(p, point, this.center);
+        glMatrix.vec3.scale(p, p, 1/this.radius);
+
+        // Latitude-longitude UVs
+        let phi = Math.atan2(-p[2], p[0]) + Math.PI;
+        let theta = Math.acos(p[1]);
+
+        return glMatrix.vec2.fromValues(phi/(2*Math.PI), theta/Math.PI);
     }
 
     hit(ray, tmin, tmax){
@@ -48,8 +63,9 @@ class Sphere extends Hittable{
 
             const p = ray.at(t);
             const n = this.normal(p);
+            const uv = this.uv(p);
 
-            return new HitRecord(t, p, n, this.material);
+            return new HitRecord(t, p, n, this.material, uv);
         }
         return null;
     }

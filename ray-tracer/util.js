@@ -152,3 +152,31 @@ function skybox(ray){
 
     return c;
 }
+
+
+ function imageDataFromFile(path){
+    let img = document.createElement('img');
+    let canvas = document.createElement('canvas');
+    let context = canvas.getContext('2d');
+
+    return new Promise( (resolve, reject) => {
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0);
+            let imgData = context.getImageData(0, 0, img.width, img.height);
+            resolve(imgData);
+        }
+        img.onerror = reject;
+        img.src = path;
+    });
+}
+
+
+function imageTexture(imgData, uv){
+    let c = getPixel(imgData, 
+            Math.floor(uv[0]*(imgData.width - 1)), 
+            Math.floor(uv[1]*(imgData.height - 1)));
+    glMatrix.vec3.scale(c, c, 1/MAX_COLOR);
+    return c; 
+}
