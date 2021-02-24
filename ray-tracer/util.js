@@ -79,6 +79,17 @@ function randomPointOnUnitSphere(){
 }
 
 
+function randomPointInUnitDisk(){
+    // From https://mathworld.wolfram.com/DiskPointPicking.html
+    let r = Math.random();
+    let theta = Math.random()*Math.PI*2;
+    let x = Math.sqrt(r)*Math.cos(theta);
+    let y = Math.sqrt(r)*Math.sin(theta);
+
+    return glMatrix.vec3.fromValues(x, y, 0);
+}
+
+
 function nearZero(vec){
     let e = 1e-8;
     return Math.abs(vec[0]) < e 
