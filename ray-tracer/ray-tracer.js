@@ -14,13 +14,13 @@ const BLACK = glMatrix.vec3.fromValues(0, 0, 0);
 window.onload = function(){
     canvas = document.getElementById("canvas");
     settings = {
-        antialiasing: 25,
+        antialiasing: 10,
         bounceLimit: 5
     }
 
     // Putting camera further from scene with smaller FOV reduces distortion
     cam = new Camera(
-        glMatrix.vec3.fromValues(0, 0, 2),      // Camera pos
+        glMatrix.vec3.fromValues(0, 0.5, 2),      // Camera pos
         glMatrix.vec3.fromValues(0, 0, -1),     // LookAt point
         glMatrix.vec3.fromValues(0, 1, 0),
         Math.PI/4,  // FOV
@@ -49,9 +49,10 @@ window.onload = function(){
         // Create scene
         scene = {
             "objects": [
-                new Sphere(glMatrix.vec3.fromValues(0, -100.5, -1), 100, matGray),
-                new Sphere(glMatrix.vec3.fromValues(0, 0, -1), 0.5, matRed),
-                new Sphere(glMatrix.vec3.fromValues(1, 0, -1), 0.5, matEarth),
+                new Plane(glMatrix.vec3.fromValues(0, -0.5, 0), glMatrix.vec3.fromValues(0, 1, 0), matGray),
+                new Sphere(glMatrix.vec3.fromValues(-0.55, 0, -1), 0.5, matRed),
+                new Sphere(glMatrix.vec3.fromValues(0, 0, -0.5), 0.5, matGlass),
+                new Sphere(glMatrix.vec3.fromValues(0.55, 0, -1), 0.5, matEarth),
             ]
         }
 

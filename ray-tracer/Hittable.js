@@ -19,8 +19,8 @@ class Hittable{
 }
 
 class Sphere extends Hittable{
-    constructor(center, radius, texture){
-        super(texture);
+    constructor(center, radius, material){
+        super(material);
         this.center = glMatrix.vec3.clone(center);
         this.radius = radius;
     }
@@ -69,4 +69,41 @@ class Sphere extends Hittable{
         }
         return null;
     }
+}
+
+
+class Plane extends Hittable{
+    constructor(center, normal, material){
+        super(material);
+
+        this.center = center;
+        this.n = normal;
+    }
+
+    normal(p){
+        return this.n;
+    }
+
+    uv(p){
+        // TODO: Make UVs tile with some input tile size?
+        return glMatrix.vec2.fromValues(0, 0, 0);
+    }
+
+    hit(ray, tmin, tmax){
+        let target = glMatrix.vec3.create();
+        target = glMatrix.vec3.sub(target, this.center, ray.origin);
+
+        let t = glMatrix.vec3.dot(this.n, target) / glMatrix.vec3.dot(this.n, ray.dir);
+
+        if(t < tmin || t > tmax){
+            return null;
+        }
+        
+        let p = ray.at(t);
+        let n = this.normal(p);
+        let uv = this.uv(p);
+
+        return new HitRecord(t, p, n, this.material, uv);
+    }
+
 }
