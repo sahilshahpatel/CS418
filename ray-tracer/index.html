@@ -34,8 +34,10 @@
                         <div class="card-body">
                             <canvas id="canvas" width="800" height="500" class="card-img mb-2"></canvas>
                             
-                            <!-- TODO: Add spinner when rendering -->
-                            <button id="renderButton" class="btn btn-primary">Render</button>
+                            <button id="renderButton" class="btn btn-primary">
+                                <span id="renderText">Render</span>
+                                <span id="renderSpinner" class="visually-hidden spinner-border spinner-border-sm" role="status"></span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -47,7 +49,7 @@
                         </div>
                         <div class="col">
                             <label for="detail" class="form-label">Detail Level</label>
-                            <input id="detail" type="range" min="1" max="100" value="25" class="form-range">        
+                            <input id="detail" type="range" min="1" max="100" value="10" class="form-range">        
                         </div>
         
                         <div class="col">

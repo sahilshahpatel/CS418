@@ -180,3 +180,10 @@ function imageTexture(imgData, uv){
     glMatrix.vec3.scale(c, c, 1/MAX_COLOR);
     return c; 
 }
+
+
+function waitFrame(callback){
+    requestAnimationFrame(() => {
+        requestAnimationFrame(callback);
+    });
+}

@@ -12,37 +12,37 @@ const BLACK = glMatrix.vec3.fromValues(0, 0, 0);
  * Initialize globals after window loads. Then render
  */
 window.onload = function(){
-    canvas = document.getElementById("canvas");
-
-    // Putting camera further from scene with smaller FOV reduces distortion
-    cam = new Camera(
-        glMatrix.vec3.fromValues(0, 0.5, 2),      // Camera pos
-        glMatrix.vec3.fromValues(0, 0, -1),     // LookAt point
-        glMatrix.vec3.fromValues(0, 1, 0),
-        Math.PI/4,  // FOV
-        0,          // Aperture
-        canvas.width,
-        canvas.height
-    );
-
-    /* Materials that can be made instantly */
-    matNormals = new Material(function(uv, p, n){ return colorFromNormal(n) });
-    matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5), 0.05);
-    matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0), 0.25);
-    matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0), 0.25);
-    matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.3);
-    matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
-
-    /* Materials made with promises */
-    let promises = [];
-    // Earth texture from http://planetpixelemporium.com/earth.html
-    promises.push(imageDataFromFile('earthmap1k.jpg'));
+    /* Load all resources via promises */
+    let promises = [
+        // Earth texture from http://planetpixelemporium.com/earth.html
+        imageDataFromFile('earthmap1k.jpg'),
+    ];
     
+    /* Create global variables and enable render button */
     Promise.all(promises).then( ([earthImgData]) => {
-        // Create promise-based materials
-        matEarth = new Material(earthImgData);
+        canvas = document.getElementById("canvas");
 
-        // Create scene
+        // Putting camera further from scene with smaller FOV reduces distortion
+        cam = new Camera(
+            glMatrix.vec3.fromValues(0, 0.5, 2),      // Camera pos
+            glMatrix.vec3.fromValues(0, 0, -1),     // LookAt point
+            glMatrix.vec3.fromValues(0, 1, 0),
+            Math.PI/4,  // FOV
+            0,          // Aperture
+            canvas.width,
+            canvas.height
+        );
+
+        /* Materials */
+        let matNormals = new Material(function(uv, p, n){ return colorFromNormal(n) });
+        let matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5), 0.05);
+        let matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0), 0.25);
+        let matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0), 0.25);
+        let matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.3);
+        let matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
+        let matEarth = new Material(earthImgData);
+
+        /* Scene */
         scene = {
             "objects": [
                 new Plane(glMatrix.vec3.fromValues(0, -0.5, 0), glMatrix.vec3.fromValues(0, 1, 0), matGray),
@@ -52,25 +52,44 @@ window.onload = function(){
             ]
         }
 
-        // Render scene
+        // Set canvas to black initially
         renderBlack();
 
-        // Activate button
+        // Enable button
         const detailSlider = document.getElementById('detail');
         const bounceSlider = document.getElementById('bounceLimit');
-        document.getElementById("renderButton").onclick = () => {
-            /* Read settings */
-            settings.antialiasing = parseInt(detailSlider.value);
-            settings.bounceLimit = parseInt(bounceSlider.value);
+        const renderButton = document.getElementById("renderButton");
+        const renderText = document.getElementById('renderText');
+        const renderSpinner = document.getElementById('renderSpinner');
+        renderButton.onclick = () => {
+            // Read settings
+            updateSettings();
             
-            render();
+            // Add loading spinner while rendering
+            renderText.classList.add('me-2');
+            renderSpinner.classList.remove('visually-hidden');
+            // Wait 1 frame allowing page to update before stalling in render call
+            waitFrame(function(){
+                render();
+                renderSpinner.classList.add('visually-hidden');
+                renderText.classList.remove('me-2');
+            });
         };
     });
 };
 
 
 /**
- * Makes canvas 
+ * Reads settings from HTML elements and updates global variable
+ */
+function updateSettings(){
+    settings.antialiasing = parseInt(detailSlider.value);
+    settings.bounceLimit = parseInt(bounceSlider.value);
+}
+
+
+/**
+ * Fills canvas with black
  */
 function renderBlack(){
     let context = canvas.getContext("2d");
