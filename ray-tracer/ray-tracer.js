@@ -1,6 +1,6 @@
 /* Global variables */
 var canvas;
-var settings;
+var settings = {};
 var cam;
 var scene;
 
@@ -13,10 +13,6 @@ const BLACK = glMatrix.vec3.fromValues(0, 0, 0);
  */
 window.onload = function(){
     canvas = document.getElementById("canvas");
-    settings = {
-        antialiasing: 10,
-        bounceLimit: 5
-    }
 
     // Putting camera further from scene with smaller FOV reduces distortion
     cam = new Camera(
@@ -57,9 +53,29 @@ window.onload = function(){
         }
 
         // Render scene
-        render();
+        renderBlack();
+
+        // Activate button
+        const detailSlider = document.getElementById('detail');
+        const bounceSlider = document.getElementById('bounceLimit');
+        document.getElementById("renderButton").onclick = () => {
+            /* Read settings */
+            settings.antialiasing = parseInt(detailSlider.value);
+            settings.bounceLimit = parseInt(bounceSlider.value);
+            
+            render();
+        };
     });
 };
+
+
+/**
+ * Makes canvas 
+ */
+function renderBlack(){
+    let context = canvas.getContext("2d");
+    context.fillRect(0, 0, canvas.width, canvas.height);
+}
 
 
 /**
