@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>CS 418 Ray Tracer</title>
+        
+        <!-- Bootstrap -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+
+
+        <!-- Libraries -->
+        <script src="gl-matrix-min.js"></script>
+        <script src="ConcurrentTaskQueue.js"></script>
+
+        <!-- Classes -->
+        <script src="Camera.js"></script>
+        <script src="Ray.js"></script>
+        <script src="Hittable.js"></script>
+        <script src="Material.js"></script>
+
+        <!-- Utilities -->
+        <script src="util.js"></script>
+
+        <!-- Main -->
+        <script src="main.js"></script>
+        <script src="Renderer.js"></script>
+        <script src="gpu-ray-tracer.js"></script>
+
+
+        <script id="shader-vs" type="x-shader/x-vertex">#version 300 es
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
+            precision mediump float;
+            #endif
+        
+            in vec4 aVertexColor;
+            in vec3 aVertexPosition;
+            out vec4 vColor;
+        
+            void main(void) {
+                gl_Position = vec4(aVertexPosition, 1.0);
+                vColor = aVertexColor;
+                //vColor = vec4(0.0, 1.0, 0.0, 1.0);
+            }
+        </script>
+          
+        <script id="shader-fs" type="x-shader/x-fragment">#version 300 es
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
+            precision mediump float;
+            #endif
+        
+            in vec4 vColor;
+            out vec4 fragmentColor;
+        
+            void main(void) {
+                fragmentColor = vColor;
+            }
+        </script>
+    </head>
+    <body>
+        <div class = "container overflow-hidden mt-5">
+            <div class="row d-flex justify-content-center">
+                <div class="col-lg-8 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <canvas id="canvas" width="800" height="500" class="card-img mb-2"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col container">
+                    <div class="row row-cols-1">
+                        <div class="col d-flex justify-content-center">
+                            <h2>Settings</h2>
+                        </div>
+                        <div class="col">
+                            <label for="detail" class="form-label">Detail Level</label>
+                            <input id="detail" type="range" min="1" max="100" value="10" class="form-range">        
+                        </div>
+        
+                        <div class="col">
+                            <label for="bounceLimit" class="form-label">Bounce Limit</label>
+                            <input id="bounceLimit" type="range" min="2" max="10" value="5" class="form-range">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
