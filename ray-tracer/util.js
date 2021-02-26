@@ -187,3 +187,16 @@ function waitFrame(callback){
         requestAnimationFrame(callback);
     });
 }
+
+function asFloat(n){
+    if(Number.isInteger(n)){
+        return '' + n + '.0';
+    }
+    else{
+        return '' + n;
+    }
+}
+
+function asVec3(v){
+    return `vec3(${asFloat(v[0])}, ${asFloat(v[1])}, ${asFloat(v[2])})`;
+}

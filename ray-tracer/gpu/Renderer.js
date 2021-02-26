@@ -31,6 +31,10 @@ class Renderer{
                 gl.getUniformLocation(this.shaderProgram, "uViewport");
         this.shaderProgram.bounceLimitUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uBounceLimit");
+        this.shaderProgram.detailUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uDetail");
+        this.shaderProgram.seedUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uSeed");
 
         this.clearColor = [1, 0, 0, 1];
         this._previousTime = 0;
@@ -87,8 +91,6 @@ class Renderer{
     
         // Use the vertex array object that we set up.
         gl.bindVertexArray(this.vertexArrayObject);
-
-        this.sendUniforms();
         
         // Render the triangle. 
         gl.drawArrays(gl.TRIANGLES, 0, this.vertexPositionBuffer.numberOfItems);
@@ -97,22 +99,31 @@ class Renderer{
         gl.bindVertexArray(null);
     }
 
-    sendUniforms(){
+    sendUniforms(seed){
         /* Set uniforms */
         gl.uniform3f(this.shaderProgram.cameraPositionUniform, 0, 0, -2);
         gl.uniform3f(this.shaderProgram.cameraLookAtUniform, 0, 0, 0);
         gl.uniform3f(this.shaderProgram.cameraUpUniform, 0, 1, 0);
         gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);    
-        gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);   
+        gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
+        gl.uniform1i(this.shaderProgram.detailUniform, 10);
+        gl.uniform1f(this.shaderProgram.seedUniform, seed);
     }
 
-    animate(){
+    animate(time){
+        this.sendUniforms(time);
         this.draw();
         this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
     }
 
-    render(){
+    start(){
         this.setup();
         this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+    }
+
+    stop(){
+        cancelAnimationFrame(this.requestAnimationFrameID);
+        this.requestAnimationFrameID = undefined;
+        gl.useProgram(null);
     }
 }

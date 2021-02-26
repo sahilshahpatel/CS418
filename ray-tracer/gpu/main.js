@@ -7,19 +7,29 @@ window.onload = function(){
     gl = createGLContext(canvas);
 
     /* Create PathTracer object */
-    let pathTracer = new PathTracerGPU();
-    let vertShader = loadShaderFromSource(
-        pathTracer.getVertexShaderSource(),
-        "x-shader/x-vertex"
-    );
-    let fragShader = loadShaderFromSource(
-        pathTracer.getFragmentShaderSource(),
-        "x-shader/x-fragment"
-    );
+    let objects = [
+        new Sphere(
+            glMatrix.vec3.fromValues(0, 0, 0),
+            0.75,
+            glMatrix.vec3.fromValues(1, 0, 0)
+        ),
+    ];
+    let pathTracer = new PathTracer(objects);
 
-    /* Render object */
-    let renderer = new Renderer(vertShader, fragShader);
-    renderer.render();
+    let promises = [
+        pathTracer.getVertexShaderSource(),
+        pathTracer.getFragmentShaderSource(),
+    ];
+
+    Promise.all(promises).then(([vSource, fSource]) => {        
+        let vertShader = loadShaderFromSource(vSource, "x-shader/x-vertex");
+        let fragShader = loadShaderFromSource(fSource, "x-shader/x-fragment");
+
+        /* Render object */
+        let renderer = new Renderer(vertShader, fragShader);
+        renderer.start();
+    });
+
 } 
 
 /**
@@ -74,6 +84,7 @@ function loadShaderFromSource(shaderSource, type){
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.log(shaderSource);
         console.error(gl.getShaderInfoLog(shader));
         return null;
     } 
