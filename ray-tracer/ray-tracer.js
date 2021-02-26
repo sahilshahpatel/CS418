@@ -56,8 +56,6 @@ window.onload = function(){
         renderBlack();
 
         // Enable button
-        const detailSlider = document.getElementById('detail');
-        const bounceSlider = document.getElementById('bounceLimit');
         const renderButton = document.getElementById("renderButton");
         const renderText = document.getElementById('renderText');
         const renderSpinner = document.getElementById('renderSpinner');
@@ -83,6 +81,9 @@ window.onload = function(){
  * Reads settings from HTML elements and updates global variable
  */
 function updateSettings(){
+    const detailSlider = document.getElementById('detail');
+    const bounceSlider = document.getElementById('bounceLimit');
+    
     settings.antialiasing = parseInt(detailSlider.value);
     settings.bounceLimit = parseInt(bounceSlider.value);
 }
