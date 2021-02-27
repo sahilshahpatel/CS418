@@ -37,12 +37,16 @@ struct Plane{
 /* Helper Functions */
 HitRec invalidHitRec();
 vec3 reflect(vec3 v, vec3 n);
-float random(float seed);
+float random();
+vec3 randomPointOnUnitSphere();
 
 /* Intersection Functions */
 HitRec sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax);
 HitRec planeIntersection(Plane plane, Ray ray, float tmin, float tmax);
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
+
+/* Scattering Functions */
+Ray lambertianScatter(Ray ray, vec3 p, vec3 n);
 
 /* Path Tracer Functions */
 vec3 getColor(Ray ray);
@@ -55,8 +59,12 @@ uniform int uDetail;
 uniform float uSeed;
 out vec4 fragmentColor;
 
+/* Global variables */
+vec2 seed;
+
 void main(void){
     float aspect = uViewport.x / uViewport.y;
+    seed = gl_FragCoord.xy + vec2(uSeed);
 
     /* Camera Info */
     vec3 cam_dir = normalize(uCam.lookAt - uCam.pos);
@@ -65,10 +73,7 @@ void main(void){
     vec3 color = vec3(0.0);
     for(int i = 0; i < uDetail; i++){
         // Jitter UV position slightly (TODO: better seed choice?)
-        vec2 jitter = vec2(
-            random(uSeed + float(i)) - 0.5,
-            random(uSeed + float(2*i)) - 0.5
-        );
+        vec2 jitter = vec2(random(), random()) - vec2(0.5);
         vec2 uv = (gl_FragCoord.xy + jitter) / uViewport;
 
         // Calculate ray from camera to UV position
@@ -87,21 +92,26 @@ void main(void){
 
 /* Path Tracer */
 vec3 getColor(Ray ray){
-    // Skybox
-    float y = 0.5*ray.d.y + 1.0;
-    vec3 color = vec3(0.5, 0.7, 1.0)*y + vec3(1, 1, 1)*(1.0-y);
+    // Ambient light is bright white
+    vec3 color = vec3(1.0);
 
     // Loop over bouce limit (we can't do recursion in GLSL!)
     for(int i = 0; i < uBounceLimit; i++){
         HitRec hit = sceneIntersection(ray, EPSILON, INFINITY);
         
-        if(hit.t >= INFINITY){ break; }
+        if(hit.t >= INFINITY){
+            // Rays that intersect with nothing become skybox
+            if(color == vec3(1.0)){
+                float y = 0.5*ray.d.y + 1.0;
+                color = vec3(0.7, 0.8, 1)*y + vec3(1.0, 1.0, 1.0)*(1.0 - y);
+            }
+            break;
+        }
         
         color *= hit.c;
 
         // Move ray for next iteration
-        ray.o = hit.p;
-        ray.d = reflect(ray.d, hit.n); //  all materials are metals for now
+        ray = lambertianScatter(ray, hit.p, hit.n);
     }
 
     return color;
@@ -151,6 +161,12 @@ HitRec planeIntersection(Plane plane, Ray ray, float tmin, float tmax){
     return HitRec(t, p, plane.normal, plane.color);
 }
 
+/* Scatter Functions */
+Ray lambertianScatter(Ray r, vec3 p, vec3 n){
+    vec3 dir = normalize(randomPointOnUnitSphere() + n);
+    return Ray(p, dir);
+}
+
 /* Helper functions */
 HitRec invalidHitRec(){
     return HitRec(INFINITY, vec3(0.0), vec3(0.0), vec3(0.0));
@@ -160,7 +176,34 @@ vec3 reflect(vec3 v, vec3 n){
     return v - 2.0*dot(v, n)*n;
 }
 
-float random(float seed){
-    // TODO: make much better
-    return sin(seed);
+vec3 randomPointOnUnitSphere(){
+    // From https://mathworld.wolfram.com/SpherePointPicking.html
+    float u = random();
+    float v = random();
+
+    float theta = 2.0*PI*u;
+    float phi = acos(2.0*v - 1.0);
+    
+    return vec3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+}
+
+/* Random number generator */
+highp float random(vec2 co)
+{
+    // From http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
+    highp float a = 12.9898;
+    highp float b = 78.233;
+    highp float c = 43758.5453;
+    highp float dt= dot(co.xy ,vec2(a,b));
+    highp float sn= mod(dt, PI);
+    return fract(sin(sn) * c);
+}
+
+float random(){
+    // From https://www.shadertoy.com/view/lssBD7
+    // Get random and reset seed for next call
+    seed.x = random(seed);
+    seed.y = random(seed);
+
+    return seed.x;
 }

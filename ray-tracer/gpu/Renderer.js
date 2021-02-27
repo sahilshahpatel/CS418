@@ -99,7 +99,7 @@ class Renderer{
         gl.bindVertexArray(null);
     }
 
-    sendUniforms(seed){
+    animate(time){
         /* Set uniforms */
         gl.uniform3f(this.shaderProgram.cameraPositionUniform, 0, 0, -2);
         gl.uniform3f(this.shaderProgram.cameraLookAtUniform, 0, 0, 0);
@@ -107,13 +107,10 @@ class Renderer{
         gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);    
         gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
         gl.uniform1i(this.shaderProgram.detailUniform, 10);
-        gl.uniform1f(this.shaderProgram.seedUniform, seed);
-    }
+        gl.uniform1f(this.shaderProgram.seedUniform, time);
 
-    animate(time){
-        this.sendUniforms(time);
         this.draw();
-        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+        // this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
     }
 
     start(){

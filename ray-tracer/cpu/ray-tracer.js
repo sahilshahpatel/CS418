@@ -35,9 +35,9 @@ window.onload = function(){
 
         /* Materials */
         let matNormals = new Material(function(uv, p, n){ return colorFromNormal(n) });
-        let matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5), 0.05);
-        let matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0), 0.25);
-        let matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0), 0.25);
+        let matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+        let matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
+        let matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0));
         let matMetal = new Metal(glMatrix.vec3.fromValues(0.8, 0.8, 0.8), 0.3);
         let matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
         let matEarth = new Material(earthImgData);

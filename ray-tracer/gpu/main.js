@@ -13,6 +13,11 @@ window.onload = function(){
             0.75,
             glMatrix.vec3.fromValues(1, 0, 0)
         ),
+        new Plane(
+            glMatrix.vec3.fromValues(0, -0.75, 0),
+            glMatrix.vec3.fromValues(0, 1, 0),
+            glMatrix.vec3.fromValues(0.5, 0.5, 0.5)
+        ),
     ];
     let pathTracer = new PathTracer(objects);
 

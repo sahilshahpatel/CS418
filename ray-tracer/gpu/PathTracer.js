@@ -33,6 +33,7 @@ class PathTracer{
 
                     #define INFINITY ${this.infinity.toFixed(1)}
                     #define EPSILON ${this.epsilon}
+                    #define PI 3.141592
 
                     #define SCENE_INTERSECTIONS ${sceneIntersections}
 
