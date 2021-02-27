@@ -6,17 +6,21 @@ window.onload = function(){
     canvas = document.getElementById('canvas');
     gl = createGLContext(canvas);
 
-    /* Create PathTracer object */
+    /* Create Materials */
+    matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
+    matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+
+    /* Create scene */
     let objects = [
         new Sphere(
             glMatrix.vec3.fromValues(0, 0, 0),
             0.75,
-            glMatrix.vec3.fromValues(1, 0, 0)
+            matRed
         ),
         new Plane(
             glMatrix.vec3.fromValues(0, -0.75, 0),
             glMatrix.vec3.fromValues(0, 1, 0),
-            glMatrix.vec3.fromValues(0.5, 0.5, 0.5)
+            matGray
         ),
     ];
     let pathTracer = new PathTracer(objects);

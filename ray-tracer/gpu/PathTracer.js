@@ -47,7 +47,13 @@ class PathTracer{
 
     sceneIntersectionSource(objects){
         let source = '';
-        objects.forEach(obj => { source += obj.intersectionSource(); });
+        objects.forEach(obj => {
+            source += ` \\
+            current.intersect = ${obj.intersectionSource()}; \\
+            current.material = ${obj.material.source()}; \\
+            if(current.intersect.t < result.intersect.t){ result = current; } \\
+            `;
+        });
         return source;
     }
 }

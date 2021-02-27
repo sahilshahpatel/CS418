@@ -15,34 +15,41 @@ struct Ray{
     vec3 d; // Direction
 };
 
-struct HitRec{
+struct Intersection{
     float t;
     vec3 p;
     vec3 n;
-    vec3 c;
+};
+
+struct Material{
+    vec3 color;
+    Ray scatter;
+};
+
+struct HitRec{
+    Intersection intersect;
+    Material material;
 };
 
 struct Sphere{
     vec3 center;
     float radius;
-    vec3 color;
 };
 
 struct Plane{
     vec3 center;
     vec3 normal;
-    vec3 color;
 };
 
 /* Helper Functions */
-HitRec invalidHitRec();
+Intersection invalidIntersection();
 vec3 reflect(vec3 v, vec3 n);
 float random();
 vec3 randomPointOnUnitSphere();
 
 /* Intersection Functions */
-HitRec sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax);
-HitRec planeIntersection(Plane plane, Ray ray, float tmin, float tmax);
+Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax);
+Intersection planeIntersection(Plane plane, Ray ray, float tmin, float tmax);
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
 /* Scattering Functions */
@@ -99,7 +106,7 @@ vec3 getColor(Ray ray){
     for(int i = 0; i < uBounceLimit; i++){
         HitRec hit = sceneIntersection(ray, EPSILON, INFINITY);
         
-        if(hit.t >= INFINITY){
+        if(hit.intersect.t >= INFINITY){
             // Rays that intersect with nothing become skybox
             if(color == vec3(1.0)){
                 float y = 0.5*ray.d.y + 1.0;
@@ -108,10 +115,8 @@ vec3 getColor(Ray ray){
             break;
         }
         
-        color *= hit.c;
-
-        // Move ray for next iteration
-        ray = lambertianScatter(ray, hit.p, hit.n);
+        color *= hit.material.color;
+        ray = hit.material.scatter;
     }
 
     return color;
@@ -119,15 +124,16 @@ vec3 getColor(Ray ray){
 
 /* Intersection functions */
 HitRec sceneIntersection(Ray ray, float tmin, float tmax){
-    HitRec result = HitRec(tmax, vec3(0.0), vec3(0.0), vec3(0.0));
-    HitRec hit;
+    HitRec result;
+    result.intersect = Intersection(tmax, vec3(0.0), vec3(0.0));
+    HitRec current;
 
     SCENE_INTERSECTIONS
 
     return result;
 }
 
-HitRec sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){            
+Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){            
     vec3 sphere_to_ray = ray.o - sphere.center;
 
     float a = dot(ray.d, ray.d);
@@ -136,29 +142,29 @@ HitRec sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){
     float d = b*b - 4.0*a*c;
 
     if(d < 0.0){
-        return invalidHitRec();
+        return invalidIntersection();
     } else{
         float t = (-b - sqrt(d)) / (2.0*a);
 
         if(t < tmin || t > tmax){
-            return invalidHitRec();
+            return invalidIntersection();
         }
 
         vec3 p = ray.o + t*ray.d;
-        return HitRec(t, p, p - c, sphere.color);
+        return Intersection(t, p, p - c);
     }
 }
 
-HitRec planeIntersection(Plane plane, Ray ray, float tmin, float tmax){
+Intersection planeIntersection(Plane plane, Ray ray, float tmin, float tmax){
     vec3 ray_to_plane = plane.center - ray.o;
     float t = dot(plane.normal, ray_to_plane) / dot(plane.normal, ray.d);
 
     if(t < tmin || t > tmax){
-        return invalidHitRec();
+        return invalidIntersection();
     }
 
     vec3 p = ray.o + t*ray.d;
-    return HitRec(t, p, plane.normal, plane.color);
+    return Intersection(t, p, plane.normal);
 }
 
 /* Scatter Functions */
@@ -168,8 +174,8 @@ Ray lambertianScatter(Ray r, vec3 p, vec3 n){
 }
 
 /* Helper functions */
-HitRec invalidHitRec(){
-    return HitRec(INFINITY, vec3(0.0), vec3(0.0), vec3(0.0));
+Intersection invalidIntersection(){
+    return Intersection(INFINITY, vec3(0.0), vec3(0.0));
 }
 
 vec3 reflect(vec3 v, vec3 n){
