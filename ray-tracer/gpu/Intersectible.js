@@ -17,7 +17,7 @@ class Sphere extends Intersectible{
     }
 
     intersectionSource(){
-        let objConstructor = `Sphere(${asVec3(this.center)}, 0.75)`;
+        let objConstructor = `Sphere(${asVec3(this.center)}, ${asFloat(this.radius)})`;
         return `sphereIntersection(${objConstructor}, ray, tmin, tmax)`;
     }
 }

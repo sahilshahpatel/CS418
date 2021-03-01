@@ -9,18 +9,24 @@ window.onload = function(){
     /* Create Materials */
     matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
     matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+    matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
 
     /* Create scene */
     let objects = [
-        new Sphere(
-            glMatrix.vec3.fromValues(0, 0, 0),
-            0.75,
-            matRed
-        ),
         new Plane(
-            glMatrix.vec3.fromValues(0, -0.75, 0),
+            glMatrix.vec3.fromValues(0, -0.5, 0),
             glMatrix.vec3.fromValues(0, 1, 0),
             matGray
+        ),
+        new Sphere(
+            glMatrix.vec3.fromValues(0, 0, 0),
+            0.5,
+            matRed
+        ),
+        new Sphere(
+            glMatrix.vec3.fromValues(1, 0, 0),
+            0.5,
+            matGlass
         ),
     ];
     let pathTracer = new PathTracer(objects);
@@ -34,8 +40,19 @@ window.onload = function(){
         let vertShader = loadShaderFromSource(vSource, "x-shader/x-vertex");
         let fragShader = loadShaderFromSource(fSource, "x-shader/x-fragment");
 
+        /* Create camera */
+        cam = new Camera(
+            glMatrix.vec3.fromValues(0, 0, 5),     // Camera pos
+            glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
+            glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
+            Math.PI/4,                              // FOV
+            0,                                      // Aperture
+            gl.viewportWidth,
+            gl.viewportHeight
+        );
+
         /* Render object */
-        let renderer = new Renderer(vertShader, fragShader);
+        let renderer = new Renderer(vertShader, fragShader, cam);
         renderer.start();
     });
 

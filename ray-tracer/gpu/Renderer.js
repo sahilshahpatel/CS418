@@ -1,5 +1,7 @@
 class Renderer{
-    constructor(vertexShader, fragmentShader){
+    constructor(vertexShader, fragmentShader, camera){
+        this.camera = camera;
+
         this.vertexShader = vertexShader;
         this.fragmentShader = fragmentShader;
 
@@ -27,6 +29,8 @@ class Renderer{
                 gl.getUniformLocation(this.shaderProgram, "uCam.lookAt");
         this.shaderProgram.cameraUpUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uCam.up");
+        this.shaderProgram.cameraRightUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uCam.right");
         this.shaderProgram.viewportUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uViewport");
         this.shaderProgram.bounceLimitUniform = 
@@ -101,10 +105,11 @@ class Renderer{
 
     animate(time){
         /* Set uniforms */
-        gl.uniform3f(this.shaderProgram.cameraPositionUniform, 0, 0, -2);
-        gl.uniform3f(this.shaderProgram.cameraLookAtUniform, 0, 0, 0);
-        gl.uniform3f(this.shaderProgram.cameraUpUniform, 0, 1, 0);
-        gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);    
+        gl.uniform3fv(this.shaderProgram.cameraPositionUniform, this.camera.pos);
+        gl.uniform3fv(this.shaderProgram.cameraLookAtUniform, this.camera.lookAt);
+        gl.uniform3fv(this.shaderProgram.cameraUpUniform, this.camera.up);
+        gl.uniform3fv(this.shaderProgram.cameraRightUniform, this.camera.right);
+        gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);
         gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
         gl.uniform1i(this.shaderProgram.detailUniform, 10);
         gl.uniform1f(this.shaderProgram.seedUniform, time);

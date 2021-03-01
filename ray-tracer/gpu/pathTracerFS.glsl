@@ -5,8 +5,8 @@
 struct Camera{
     vec3 pos;
     vec3 lookAt;
-    vec3 up;
-    float fov;
+    vec3 up;        // Scaled based on FOV -> viewport height
+    vec3 right;     // Scaled based on FOV -> viewport width
     float aperture;
 };
 
@@ -44,6 +44,8 @@ struct Plane{
 /* Helper Functions */
 Intersection invalidIntersection();
 vec3 reflect(vec3 v, vec3 n);
+vec3 refract(vec3 v, vec3 n, float eta_ratio);
+float schlick(float cos_theta, float eta_ratio);
 float random();
 vec3 randomPointOnUnitSphere();
 
@@ -54,13 +56,15 @@ HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
 /* Scattering Functions */
 Ray lambertianScatter(Ray ray, vec3 p, vec3 n);
+Ray metalScatter(Ray ray, vec3 p, vec3 n, float fuzz);
+Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta);
 
 /* Path Tracer Functions */
 vec3 getColor(Ray ray);
 
 /* Inputs and Outputs */
-uniform Camera uCam;
 uniform vec2 uViewport;
+uniform Camera uCam;
 uniform int uBounceLimit;
 uniform int uDetail;
 uniform float uSeed;
@@ -70,26 +74,22 @@ out vec4 fragmentColor;
 vec2 seed;
 
 void main(void){
-    float aspect = uViewport.x / uViewport.y;
-    seed = gl_FragCoord.xy + vec2(uSeed);
 
-    /* Camera Info */
-    vec3 cam_dir = normalize(uCam.lookAt - uCam.pos);
-    float focus = length(uCam.lookAt - uCam.pos);
+    seed = gl_FragCoord.xy + vec2(uSeed);
     
     vec3 color = vec3(0.0);
     for(int i = 0; i < uDetail; i++){
-        // Jitter UV position slightly (TODO: better seed choice?)
+        // Jitter UV position slightly
         vec2 jitter = vec2(random(), random()) - vec2(0.5);
         vec2 uv = (gl_FragCoord.xy + jitter) / uViewport;
 
-        // Calculate ray from camera to UV position
-        vec3 ray_d  = 2.0*(uv.x - 0.5) * aspect * cross(cam_dir, uCam.up)
-            + 2.0*(uv.y - 0.5) * uCam.up
-            + cam_dir * focus;
+        // Calculate world position of fragment
+        vec3 pos = uCam.lookAt
+                + (uv.x - 0.5) * uCam.right
+                + (uv.y - 0.5) * uCam.up;
         
         // Determine color
-        color += getColor(Ray(uCam.pos, ray_d)); 
+        color += getColor(Ray(uCam.pos, normalize(pos - uCam.pos))); 
     }
     color /= float(uDetail);
 
@@ -99,24 +99,23 @@ void main(void){
 
 /* Path Tracer */
 vec3 getColor(Ray ray){
-    // Ambient light is bright white
-    vec3 color = vec3(1.0);
+    // Ambient light is skybox
+    float y = 0.5 * ray.d.y + 1.0;
+    vec3 color = vec3(0.7, 0.8, 1)*y + vec3(1.0, 1.0, 1.0)*(1.0 - y);
 
     // Loop over bouce limit (we can't do recursion in GLSL!)
     for(int i = 0; i < uBounceLimit; i++){
         HitRec hit = sceneIntersection(ray, EPSILON, INFINITY);
         
         if(hit.intersect.t >= INFINITY){
-            // Rays that intersect with nothing become skybox
-            if(color == vec3(1.0)){
-                float y = 0.5*ray.d.y + 1.0;
-                color = vec3(0.7, 0.8, 1)*y + vec3(1.0, 1.0, 1.0)*(1.0 - y);
-            }
             break;
         }
         
         color *= hit.material.color;
         ray = hit.material.scatter;
+
+        // If we shouldn't scatter, stop
+        if(dot(ray.d, ray.d) == 0.0) break;
     }
 
     return color;
@@ -173,6 +172,34 @@ Ray lambertianScatter(Ray r, vec3 p, vec3 n){
     return Ray(p, dir);
 }
 
+Ray metalScatter(Ray ray, vec3 p, vec3 n, float fuzz){
+    vec3 dir = reflect(ray.d, n) + fuzz * randomPointOnUnitSphere();
+    
+    // Don't let fuzz allow dir to become internal
+    if(dot(dir, n) < 0.0) dir = vec3(0.0);
+
+    return Ray(p, dir);
+}
+
+Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta){
+    float cos_theta = dot(-ray.d, n);
+    float sin_theta = sqrt(1.0 - cos_theta*cos_theta);
+
+    float eta_ratio = dot(ray.d, n) > 0.0 ? eta : 1.0 / eta;
+
+    vec3 dir;
+
+    // Reflect if we must or with some probability
+    if(eta_ratio * sin_theta > 1.0 || schlick(cos_theta, eta_ratio) > random()){
+        dir = reflect(ray.d, n);
+    }
+    else{
+        dir = refract(ray.d, n, eta_ratio);
+    }
+
+    return Ray(p, dir);
+}
+
 /* Helper functions */
 Intersection invalidIntersection(){
     return Intersection(INFINITY, vec3(0.0), vec3(0.0));
@@ -180,6 +207,22 @@ Intersection invalidIntersection(){
 
 vec3 reflect(vec3 v, vec3 n){
     return v - 2.0*dot(v, n)*n;
+}
+
+vec3 refract(vec3 v, vec3 n, float eta_ratio){
+    float cos_theta = dot(-v, n);
+
+    vec3 r_perp = eta_ratio * (n*cos_theta + v);
+    vec3 r_par = n * -sqrt(abs(1.0 - dot(r_perp, r_perp)));
+
+    return r_perp + r_par;
+}
+
+float schlick(float cos_theta, float eta_ratio){
+    // Schlick's approximation for reflectance at varying angles
+    float r = (1.0 - eta_ratio) / (1.0 + eta_ratio);
+    r = r*r;
+    return r + (1.0 - r)*pow(1.0 - cos_theta, 5.0);
 }
 
 vec3 randomPointOnUnitSphere(){
