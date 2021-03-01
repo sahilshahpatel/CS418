@@ -24,11 +24,17 @@ class Metal extends Material{
     }
 
     source(){
-        return `Material(${asVec3(this.color)}, metalScatter(ray, current.intersect.p, current.intersect.n, ${asFloat(this.fuzz)}))`
+        if(this.fuzz > 0){
+            return `Material(${asVec3(this.color)}, metalScatter(ray, current.intersect.p, current.intersect.n, ${asFloat(this.fuzz)}))`
+        }
+        else{
+            // More efficient version if fuzz is 0
+            return `Material(${asVec3(this.color)}, Ray(current.intersect.p, reflect(ray.d, current.intersect.n)))`
+        }
     }
 }
 
-class Dielectric extends Metal{
+class Dielectric extends Material{
     constructor(color, eta){
         super(color);
         
@@ -37,5 +43,16 @@ class Dielectric extends Metal{
 
     source(){
         return `Material(${asVec3(this.color)}, dielectricScatter(ray, current.intersect.p, current.intersect.n, ${asFloat(this.eta)}))`;
+    }
+}
+
+class Normals extends Material{
+    constructor(){
+        // "Color" doesn't matter for normals material
+        super(glMatrix.vec3.fromValues(0, 0, 0));
+    }
+
+    source(){
+        return `Material(0.5*current.intersect.n + 0.5, Ray(current.intersect.p, vec3(0.0)))`
     }
 }

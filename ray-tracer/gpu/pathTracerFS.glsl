@@ -150,7 +150,7 @@ Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){
         }
 
         vec3 p = ray.o + t*ray.d;
-        return Intersection(t, p, p - c);
+        return Intersection(t, p, p - sphere.center);
     }
 }
 

@@ -7,25 +7,43 @@ window.onload = function(){
     gl = createGLContext(canvas);
 
     /* Create Materials */
-    matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
-    matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
-    matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
+    let matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
+    let matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0));
+    let matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+    let matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
+    let matSteel = new Metal(glMatrix.vec3.fromValues(0.75, 0.75, 0.75), 0);
+    let matNormals = new Normals();
 
     /* Create scene */
     let objects = [
         new Plane(
-            glMatrix.vec3.fromValues(0, -0.5, 0),
+            glMatrix.vec3.fromValues(0, -1, 0),
             glMatrix.vec3.fromValues(0, 1, 0),
             matGray
         ),
         new Sphere(
-            glMatrix.vec3.fromValues(0, 0, 0),
-            0.5,
+            glMatrix.vec3.fromValues(-1, 0, -1),
+            1,
+            matGreen
+        ),
+        new Sphere(
+            glMatrix.vec3.fromValues(1, 0, 1),
+            1,
             matRed
         ),
         new Sphere(
-            glMatrix.vec3.fromValues(1, 0, 0),
-            0.5,
+            glMatrix.vec3.fromValues(1, 0, -1),
+            1,
+            matNormals
+        ),
+        new Sphere(
+            glMatrix.vec3.fromValues(-1, 0, 1),
+            1,
+            matSteel
+        ),
+        new Sphere(
+            glMatrix.vec3.fromValues(0, 1, 0),
+            1,
             matGlass
         ),
     ];
@@ -42,7 +60,7 @@ window.onload = function(){
 
         /* Create camera */
         cam = new Camera(
-            glMatrix.vec3.fromValues(0, 0, 5),     // Camera pos
+            glMatrix.vec3.fromValues(1, 3, 7),      // Camera pos
             glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
             glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
             Math.PI/4,                              // FOV
