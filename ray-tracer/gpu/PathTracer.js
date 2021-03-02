@@ -5,10 +5,22 @@ class PathTracer{
         this.objects = objects;
     }
 
+    init(){
+        return new Promise( (resolve, reject) => {
+            Promise.all([pathTracer.getVertexShaderSource(), pathTracer.getFragmentShaderSource()])
+            .then(([vSource, fSource]) => {
+                this.vertexShader = loadShaderFromSource(vSource, "x-shader/x-vertex");
+                this.fragmentShader = loadShaderFromSource(fSource, "x-shader/x-fragment");
+    
+                resolve();
+            })
+            .catch(err => {reject(err)});
+        });
+    }
+
     getVertexShaderSource(){
         return new Promise((resolve, reject) => {
-            fetch('pathTracerVS.glsl')
-            .then(response => response.text())
+            fetchText('pathTracerVS.glsl')
             .then(text => {
                 resolve(text);
             })
@@ -20,8 +32,7 @@ class PathTracer{
         let sceneIntersections = this.sceneIntersectionSource(this.objects);
 
         return new Promise((resolve, reject) => {
-            fetch('pathTracerFS.glsl')
-            .then(response => response.text())
+            fetchText('pathTracerFS.glsl')
             .then(text => {
                 resolve(`\
                     #version 300 es

@@ -48,32 +48,21 @@ window.onload = function(){
         ),
     ];
     let pathTracer = new PathTracer(objects);
+    
+    /* Create camera */
+    cam = new Camera(
+        glMatrix.vec3.fromValues(1, 3, 7),      // Camera pos
+        glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
+        glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
+        Math.PI/4,                              // FOV
+        0,                                      // Aperture
+        gl.viewportWidth,
+        gl.viewportHeight
+    );
 
-    let promises = [
-        pathTracer.getVertexShaderSource(),
-        pathTracer.getFragmentShaderSource(),
-    ];
-
-    Promise.all(promises).then(([vSource, fSource]) => {        
-        let vertShader = loadShaderFromSource(vSource, "x-shader/x-vertex");
-        let fragShader = loadShaderFromSource(fSource, "x-shader/x-fragment");
-
-        /* Create camera */
-        cam = new Camera(
-            glMatrix.vec3.fromValues(1, 3, 7),      // Camera pos
-            glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
-            glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
-            Math.PI/4,                              // FOV
-            0,                                      // Aperture
-            gl.viewportWidth,
-            gl.viewportHeight
-        );
-
-        /* Render object */
-        let renderer = new Renderer(vertShader, fragShader, cam);
-        renderer.start();
-    });
-
+    /* Render object */
+    let renderer = new Renderer(pathTracer, cam);
+    renderer.init().then(() => renderer.start());
 } 
 
 /**

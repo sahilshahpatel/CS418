@@ -46,6 +46,7 @@ Intersection invalidIntersection();
 vec3 reflect(vec3 v, vec3 n);
 vec3 refract(vec3 v, vec3 n, float eta_ratio);
 float schlick(float cos_theta, float eta_ratio);
+float random(vec2 co);
 float random();
 vec3 randomPointOnUnitSphere();
 
@@ -68,33 +69,34 @@ uniform Camera uCam;
 uniform int uBounceLimit;
 uniform int uDetail;
 uniform float uSeed;
+uniform float uPreviousFrameWeight;
+uniform sampler2D uPreviousFrame;
+in vec2 fragUV;
 out vec4 fragmentColor;
 
 /* Global variables */
 vec2 seed;
 
 void main(void){
-
     seed = gl_FragCoord.xy + vec2(uSeed);
     
-    vec3 color = vec3(0.0);
-    for(int i = 0; i < uDetail; i++){
-        // Jitter UV position slightly
-        vec2 jitter = vec2(random(), random()) - vec2(0.5);
-        vec2 uv = (gl_FragCoord.xy + jitter) / uViewport;
+    // Jitter UV position slightly
+    vec2 jitter = vec2(random(), random()) / uViewport;
+    vec2 uv = fragUV;
 
-        // Calculate world position of fragment
-        vec3 pos = uCam.lookAt
-                + (uv.x - 0.5) * uCam.right
-                + (uv.y - 0.5) * uCam.up;
-        
-        // Determine color
-        color += getColor(Ray(uCam.pos, normalize(pos - uCam.pos))); 
-    }
-    color /= float(uDetail);
+    // fragmentColor = vec4(vec3(random()), 1.0);
+    // return;
 
-    // Always full alpha
-    fragmentColor = vec4(color, 1.0);
+    // Calculate world position of fragment
+    vec3 pos = uCam.lookAt
+            + (uv.x - 0.5) * uCam.right
+            + (uv.y - 0.5) * uCam.up;
+    
+    // Determine color
+    vec3 color = getColor(Ray(uCam.pos, normalize(pos - uCam.pos))); 
+
+    // Average with previous frame
+    fragmentColor = uPreviousFrameWeight * texture(uPreviousFrame, uv) + (1.0 - uPreviousFrameWeight) * vec4(color, 1.0);
 }
 
 /* Path Tracer */
@@ -249,10 +251,10 @@ highp float random(vec2 co)
 }
 
 float random(){
-    // From https://www.shadertoy.com/view/lssBD7
+    // Adapted from https://www.shadertoy.com/view/lssBD7
     // Get random and reset seed for next call
-    seed.x = random(seed);
-    seed.y = random(seed);
+    seed.x = random(seed + fragUV);
+    seed.y = random(seed + fragUV);
 
     return seed.x;
 }

@@ -200,3 +200,13 @@ function asFloat(n){
 function asVec3(v){
     return `vec3(${asFloat(v[0])}, ${asFloat(v[1])}, ${asFloat(v[2])})`;
 }
+
+
+function fetchText(filePath){
+    return new Promise((resolve, reject) => {
+        fetch(filePath)
+        .then(response => response.text())
+        .then(text => resolve(text))
+        .catch(err => reject(err));
+    });
+}

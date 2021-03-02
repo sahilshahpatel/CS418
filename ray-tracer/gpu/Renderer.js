@@ -1,13 +1,169 @@
 class Renderer{
-    constructor(vertexShader, fragmentShader, camera){
+    constructor(pathTracer, camera){
+        this.pathTracer = pathTracer;
         this.camera = camera;
+        this.frameNum = 0;
+        this.requestAnimationFrameID = undefined;
+    }
 
-        this.vertexShader = vertexShader;
-        this.fragmentShader = fragmentShader;
+    init(){
+        return new Promise( (resolve, reject) => {
+            // Create shader program from path tracer sources
+            Promise.all([this.pathTracer.getVertexShaderSource(), this.pathTracer.getFragmentShaderSource(), fetchText('rendererVS.glsl'), fetchText('rendererFS.glsl')])
+            .then(([pathVSource, pathFSource, renderVSource, renderFSource]) => {
+                let pathVS = loadShaderFromSource(pathVSource, "x-shader/x-vertex");
+                let pathFS = loadShaderFromSource(pathFSource, "x-shader/x-fragment");
 
-        this.vertexArrayObject = gl.createVertexArray();
-        gl.bindVertexArray(this.vertexArrayObject)
+                this.createShaderProgram(pathVS, pathFS);
+                if(!this.shaderProgram) reject();
 
+                let renderVS = loadShaderFromSource(renderVSource, "x-shader/x-vertex");
+                let renderFS = loadShaderFromSource(renderFSource, "x-shader/x-fragment");
+
+                this.createRenderProgram(renderVS, renderFS);
+                if(!this.renderProgram) reject();
+
+                this.vertexArrayObject = gl.createVertexArray();
+                gl.bindVertexArray(this.vertexArrayObject);
+
+                gl.clearColor(1, 0, 0, 1);
+                this.framebuffer = gl.createFramebuffer();
+
+                // Create two textures to hold last frame and current frame (adopted from http://madebyevan.com/webgl-path-tracing/webgl-path-tracing.js)
+                this.frameTextures = [];
+                for(let i = 0; i < 2; i++){
+                    this.frameTextures.push(gl.createTexture());
+                    gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[i]);
+
+                    // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexParameter.xhtml for details
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    
+                    // TODO: how to use float textures with non-power-of-2 size in WebGL2?
+                    // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, gl.viewportWidth, gl.viewportHeight, 0, gl.RGBA, gl.FLOAT, null);
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.viewportWidth, gl.viewportHeight, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+                }
+                gl.bindTexture(gl.TEXTURE_2D, null);
+
+                /* Set up vertex position buffer */
+                this.vertexPositionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
+
+                // Define a basic quad
+                const vertices = [
+                    -1, -1, 0,
+                    -1, +1, 0,
+                    +1, -1, 0,
+                    -1, +1, 0,
+                    +1, -1, 0,
+                    +1, +1, 0,
+                ];
+
+                // Populate the buffer with the position data.
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+                this.vertexPositionBuffer.itemSize = 3;
+                this.vertexPositionBuffer.numberOfItems = vertices.length / this.vertexPositionBuffer.itemSize;
+
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Runs shader program to draw to texture
+     */
+    update(time){
+        gl.useProgram(this.shaderProgram);
+        gl.bindVertexArray(this.vertexArrayObject);
+
+        // Enable each attribute we are using in the VAO.
+        gl.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
+
+        // Binds the vertexPositionBuffer to the vertex position attribute.
+        gl.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, 
+                               this.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        /* Set uniforms */
+        gl.uniform3fv(this.shaderProgram.cameraPositionUniform, this.camera.pos);
+        gl.uniform3fv(this.shaderProgram.cameraLookAtUniform, this.camera.lookAt);
+        gl.uniform3fv(this.shaderProgram.cameraUpUniform, this.camera.up);
+        gl.uniform3fv(this.shaderProgram.cameraRightUniform, this.camera.right);
+        gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);
+        gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
+        gl.uniform1f(this.shaderProgram.seedUniform, time*1000);
+        gl.uniform1f(this.shaderProgram.frameWeightUniform, this.frameNum / (this.frameNum + 1));
+
+        // Transform the clip coordinates so the render fills the canvas dimensions.
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    
+        // Clear the screen.
+        gl.clear(gl.COLOR_BUFFER_BIT);
+    
+        // Use the vertex array object that we set up.
+        gl.bindVertexArray(this.vertexArrayObject);
+
+        // Send old frame
+        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[0]);
+
+        // Store new frame
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[1], 0);
+        
+        // Render the triangle. 
+        gl.drawArrays(gl.TRIANGLES, 0, this.vertexPositionBuffer.numberOfItems);
+        
+        // Unbind to be safe
+        gl.bindVertexArray(null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        // Switch frameTextures and update frameNum
+        this.frameTextures.reverse();
+        this.frameNum++;
+    }
+
+    render(){
+        gl.useProgram(this.renderProgram);
+        gl.bindVertexArray(this.vertexArrayObject);
+
+        // Enable each attribute we are using in the VAO.
+        gl.enableVertexAttribArray(this.renderProgram.vertexPositionAttribute);
+
+        // Binds the buffers to the vertex position attribute.
+        gl.vertexAttribPointer(this.renderProgram.vertexPositionAttribute, 
+                               this.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        /* Set uniforms */
+        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[0]);
+
+        // Draw
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.bindVertexArray(this.vertexArrayObject);
+        gl.drawArrays(gl.TRIANGLES, 0, this.vertexPositionBuffer.numberOfItems);
+        
+        // Unbind to be safe
+        gl.bindVertexArray(null);
+    }
+
+    start(){
+        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+    }
+
+    animate(time){
+        this.update(time);
+        this.render();
+        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+    }
+
+    stop(){
+        cancelAnimationFrame(this.requestAnimationFrameID);
+        this.requestAnimationFrameID = undefined;
+        gl.useProgram(null);
+    }
+
+    createShaderProgram(vertexShader, fragmentShader){
         // Link the shaders together into a program.
         this.shaderProgram = gl.createProgram();
         gl.attachShader(this.shaderProgram, vertexShader);
@@ -35,97 +191,25 @@ class Renderer{
                 gl.getUniformLocation(this.shaderProgram, "uViewport");
         this.shaderProgram.bounceLimitUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uBounceLimit");
-        this.shaderProgram.detailUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uDetail");
         this.shaderProgram.seedUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uSeed");
-
-        this.clearColor = [1, 0, 0, 1];
-        this._previousTime = 0;
-        this.vertexPositionBuffer = gl.createBuffer();
-        this.vertexColorBuffer = gl.createBuffer();
-
-        // Animation frame ID
-        this.requestAnimationFrameID = undefined;
+        this.shaderProgram.frameWeightUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uPreviousFrameWeight");
     }
 
-    /**
-     * Sets up WebGL for this animation's shaders and buffers
-     */
-    setup(){
-        gl.clearColor(...this.clearColor);
-        gl.useProgram(this.shaderProgram);
-        gl.bindVertexArray(this.vertexArrayObject);
+    createRenderProgram(vertexShader, fragmentShader){
+        // Link the shaders together into a program.
+        this.renderProgram = gl.createProgram();
+        gl.attachShader(this.renderProgram, vertexShader);
+        gl.attachShader(this.renderProgram, fragmentShader);
+        gl.linkProgram(this.renderProgram);
 
-        // Enable each attribute we are using in the VAO.
-        gl.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
+        if (!gl.getProgramParameter(this.renderProgram, gl.LINK_STATUS)) {
+            alert("Failed to setup shaders");
+        }
 
-        /* Setup Buffers */
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
-
-        // Define a basic quad
-        const vertices = [
-            -1, -1, 0,
-            -1, +1, 0,
-            +1, -1, 0,
-            -1, +1, 0,
-            +1, -1, 0,
-            +1, +1, 0,
-        ];
-
-        // Populate the buffer with the position data.
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        this.vertexPositionBuffer.itemSize = 3;
-        this.vertexPositionBuffer.numberOfItems = vertices.length / this.vertexPositionBuffer.itemSize;
-
-        // Binds the buffer that we just made to the vertex position attribute.
-        gl.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, 
-                               this.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    }
-
-    /**
-     * Draws a frame to the screen.
-     */
-    draw(){
-        // Transform the clip coordinates so the render fills the canvas dimensions.
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    
-        // Clear the screen.
-        gl.clear(gl.COLOR_BUFFER_BIT);
-    
-        // Use the vertex array object that we set up.
-        gl.bindVertexArray(this.vertexArrayObject);
-        
-        // Render the triangle. 
-        gl.drawArrays(gl.TRIANGLES, 0, this.vertexPositionBuffer.numberOfItems);
-        
-        // Unbind the vertex array object to be safe.
-        gl.bindVertexArray(null);
-    }
-
-    animate(time){
-        /* Set uniforms */
-        gl.uniform3fv(this.shaderProgram.cameraPositionUniform, this.camera.pos);
-        gl.uniform3fv(this.shaderProgram.cameraLookAtUniform, this.camera.lookAt);
-        gl.uniform3fv(this.shaderProgram.cameraUpUniform, this.camera.up);
-        gl.uniform3fv(this.shaderProgram.cameraRightUniform, this.camera.right);
-        gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);
-        gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
-        gl.uniform1i(this.shaderProgram.detailUniform, 10);
-        gl.uniform1f(this.shaderProgram.seedUniform, time);
-
-        this.draw();
-        // this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
-    }
-
-    start(){
-        this.setup();
-        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
-    }
-
-    stop(){
-        cancelAnimationFrame(this.requestAnimationFrameID);
-        this.requestAnimationFrameID = undefined;
-        gl.useProgram(null);
+        /* Create shader attribtues */ 
+        this.renderProgram.vertexPositionAttribute =
+            gl.getAttribLocation(this.renderProgram, "aVertexPosition");
     }
 }
