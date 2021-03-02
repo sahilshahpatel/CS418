@@ -78,14 +78,11 @@ out vec4 fragmentColor;
 vec2 seed;
 
 void main(void){
-    seed = gl_FragCoord.xy + vec2(uSeed);
+    seed = vec2(uSeed);
     
     // Jitter UV position slightly
-    vec2 jitter = vec2(random(), random()) / uViewport;
-    vec2 uv = fragUV;
-
-    // fragmentColor = vec4(vec3(random()), 1.0);
-    // return;
+    vec2 jitter = 0.5 * vec2(random(), random()) / uViewport;
+    vec2 uv = fragUV + jitter;
 
     // Calculate world position of fragment
     vec3 pos = uCam.lookAt
@@ -96,7 +93,7 @@ void main(void){
     vec3 color = getColor(Ray(uCam.pos, normalize(pos - uCam.pos))); 
 
     // Average with previous frame
-    fragmentColor = uPreviousFrameWeight * texture(uPreviousFrame, uv) + (1.0 - uPreviousFrameWeight) * vec4(color, 1.0);
+    fragmentColor = uPreviousFrameWeight * texture(uPreviousFrame, fragUV) + (1.0 - uPreviousFrameWeight) * vec4(color, 1.0);
 }
 
 /* Path Tracer */
