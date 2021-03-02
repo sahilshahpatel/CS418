@@ -3,6 +3,7 @@ class Renderer{
         this.pathTracer = pathTracer;
         this.camera = camera;
         this.frameNum = 0;
+        this.currFramebuffer = 0;
         this.requestAnimationFrameID = undefined;
     }
 
@@ -109,11 +110,11 @@ class Renderer{
         gl.bindVertexArray(this.vertexArrayObject);
 
         // Send old frame
-        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[0]);
+        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[this.currFramebuffer]);
 
         // Store new frame
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[1], 0);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.frameTextures[1 - this.currFramebuffer], 0);
         
         // Render the triangle. 
         gl.drawArrays(gl.TRIANGLES, 0, this.vertexPositionBuffer.numberOfItems);
@@ -123,7 +124,7 @@ class Renderer{
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         // Switch frameTextures and update frameNum
-        this.frameTextures.reverse();
+        this.currFramebuffer = 1 - this.currFramebuffer;
         this.frameNum++;
     }
 
@@ -139,7 +140,7 @@ class Renderer{
                                this.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
         /* Set uniforms */
-        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[0]);
+        gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[this.currFramebuffer]);
 
         // Draw
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
