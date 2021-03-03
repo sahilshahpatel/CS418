@@ -18,7 +18,7 @@ class Sphere extends Intersectible{
 
     intersectionSource(){
         let objConstructor = `Sphere(${asVec3(this.center)}, ${asFloat(this.radius)})`;
-        return `sphereIntersection(${objConstructor}, ray, tmin, tmax)`;
+        return `sphereIntersection(current.intersect, ${objConstructor}, ray, tmin, tmax)`;
     }
 }
 
@@ -32,6 +32,6 @@ class Plane extends Intersectible{
 
     intersectionSource(){
         let objConstructor = `Plane(${asVec3(this.center)}, ${asVec3(this.normal)})`;
-        return `planeIntersection(${objConstructor}, ray, tmin, tmax)`;
+        return `planeIntersection(current.intersect, ${objConstructor}, ray, tmin, tmax)`;
     }
 }

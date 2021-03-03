@@ -60,10 +60,11 @@ class PathTracer{
         let source = '';
         objects.forEach(obj => {
             source += ` \\
-            current.intersect = ${obj.intersectionSource()}; \\
-            current.material = ${obj.material.source()}; \\
-            if(current.intersect.t < result.intersect.t){ result = current; } \\
-            `;
+            if(${obj.intersectionSource()} && current.intersect.t < result.intersect.t){ \\
+                current.material = ${obj.material.source()}; \\
+                result = current; \\
+            } \\
+            `
         });
         return source;
     }

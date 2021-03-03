@@ -42,7 +42,6 @@ struct Plane{
 };
 
 /* Helper Functions */
-Intersection invalidIntersection();
 vec3 reflect(vec3 v, vec3 n);
 vec3 refract(vec3 v, vec3 n, float eta_ratio);
 float schlick(float cos_theta, float eta_ratio);
@@ -51,8 +50,8 @@ float random();
 vec3 randomPointOnUnitSphere();
 
 /* Intersection Functions */
-Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax);
-Intersection planeIntersection(Plane plane, Ray ray, float tmin, float tmax);
+bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin, float tmax);
+bool planeIntersection(out Intersection it, Plane plane, Ray ray, float tmin, float tmax);
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
 /* Scattering Functions */
@@ -131,7 +130,7 @@ HitRec sceneIntersection(Ray ray, float tmin, float tmax){
     return result;
 }
 
-Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){            
+bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin, float tmax){            
     vec3 sphere_to_ray = ray.o - sphere.center;
 
     float a = dot(ray.d, ray.d);
@@ -140,29 +139,31 @@ Intersection sphereIntersection(Sphere sphere, Ray ray, float tmin, float tmax){
     float d = b*b - 4.0*a*c;
 
     if(d < 0.0){
-        return invalidIntersection();
+        return false;
     } else{
         float t = (-b - sqrt(d)) / (2.0*a);
 
         if(t < tmin || t > tmax){
-            return invalidIntersection();
+            return false;
         }
 
         vec3 p = ray.o + t*ray.d;
-        return Intersection(t, p, p - sphere.center);
+        it = Intersection(t, p, p - sphere.center);
+        return true;
     }
 }
 
-Intersection planeIntersection(Plane plane, Ray ray, float tmin, float tmax){
+bool planeIntersection(out Intersection it, Plane plane, Ray ray, float tmin, float tmax){
     vec3 ray_to_plane = plane.center - ray.o;
     float t = dot(plane.normal, ray_to_plane) / dot(plane.normal, ray.d);
 
     if(t < tmin || t > tmax){
-        return invalidIntersection();
+        return false;
     }
 
     vec3 p = ray.o + t*ray.d;
-    return Intersection(t, p, plane.normal);
+    it = Intersection(t, p, plane.normal);
+    return true;
 }
 
 /* Scatter Functions */
@@ -200,10 +201,6 @@ Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta){
 }
 
 /* Helper functions */
-Intersection invalidIntersection(){
-    return Intersection(INFINITY, vec3(0.0), vec3(0.0));
-}
-
 vec3 reflect(vec3 v, vec3 n){
     return v - 2.0*dot(v, n)*n;
 }
