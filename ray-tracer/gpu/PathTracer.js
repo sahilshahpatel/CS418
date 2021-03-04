@@ -1,8 +1,11 @@
 class PathTracer{
-    constructor(objects){
+    constructor(objects, camera, bounceLimit){
+        this.objects = objects;
+        this.camera = camera;
+        this.bounceLimit = bounceLimit;
+
         this.infinity = 1000.0;
         this.epsilon  = 0.0001;
-        this.objects = objects;
     }
 
     init(){

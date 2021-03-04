@@ -1,10 +1,66 @@
 class Renderer{
-    constructor(pathTracer, camera){
+    constructor(pathTracer){
         this.pathTracer = pathTracer;
-        this.camera = camera;
+
+        this.seed = 0;
         this.frameNum = 0;
         this.currFramebuffer = 0;
         this.requestAnimationFrameID = undefined;
+
+        // Naming conventions based on names in path tracer shader code
+        this.uniforms = {
+            uCam: {
+                pos: {
+                    location: undefined,
+                    value: () => this.pathTracer.camera.pos,
+                    set: gl.uniform3fv,
+                },
+                lookAt: {
+                    location: undefined,
+                    value: () => this.pathTracer.camera.lookAt,
+                    set: gl.uniform3fv,
+                },
+                up: {
+                    location: undefined,
+                    value: () => this.pathTracer.camera.up,
+                    set: gl.uniform3fv,
+                },
+                right: {
+                    location: undefined,
+                    value: () => this.pathTracer.camera.right,
+                    set: gl.uniform3fv,
+                },
+                aperture: {
+                    location: undefined,
+                    value: () => this.pathTracer.camera.aperture,
+                    set: gl.uniform1f,
+                },                
+            },
+
+            uViewport: {
+                location: undefined,
+                value: () => glMatrix.vec2.fromValues(gl.viewportWidth, gl.viewportHeight),
+                set: gl.uniform2fv,
+            },
+
+            uBounceLimit: {
+                location: undefined,
+                value: () => this.pathTracer.bounceLimit,
+                set: gl.uniform1i,
+            },
+
+            uSeed: {
+                location: undefined,
+                value: () => this.seed,
+                set: gl.uniform1f,
+            },
+
+            uPreviousFrameWeight: {
+                location: undefined,
+                value: () => this.frameNum / (this.frameNum + 1),
+                set: gl.uniform1f,
+            },
+        }
     }
 
     init(){
@@ -80,6 +136,8 @@ class Renderer{
      * Runs shader program to draw to texture
      */
     update(time){
+        this.seed = time;
+
         gl.useProgram(this.shaderProgram);
         gl.bindVertexArray(this.vertexArrayObject);
 
@@ -90,18 +148,8 @@ class Renderer{
         gl.vertexAttribPointer(this.shaderProgram.vertexPositionAttribute, 
                                this.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-        /* Set uniforms */
-        gl.uniform3fv(this.shaderProgram.cameraPositionUniform, this.camera.pos);
-        gl.uniform3fv(this.shaderProgram.cameraLookAtUniform, this.camera.lookAt);
-        gl.uniform3fv(this.shaderProgram.cameraUpUniform, this.camera.up);
-        gl.uniform3fv(this.shaderProgram.cameraRightUniform, this.camera.right);
-        gl.uniform1f(this.shaderProgram.cameraApertureUniform, this.camera.aperture);
-        gl.uniform1f(this.shaderProgram.cameraZoomUniform, this.camera.zoom);
-        gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);
-        gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
-        gl.uniform1f(this.shaderProgram.seedUniform, time*1000);
-        gl.uniform1f(this.shaderProgram.frameWeightUniform, this.frameNum / (this.frameNum + 1));
-
+        this.setUniforms(this.uniforms);
+        
         // Transform the clip coordinates so the render fills the canvas dimensions.
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     
@@ -191,26 +239,33 @@ class Renderer{
             gl.getAttribLocation(this.shaderProgram, "aVertexPosition");
 
         /* Create shader uniforms */
-        this.shaderProgram.cameraPositionUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.pos");
-        this.shaderProgram.cameraLookAtUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.lookAt");
-        this.shaderProgram.cameraUpUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.up");
-        this.shaderProgram.cameraRightUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.right");
-        this.shaderProgram.cameraApertureUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.aperture");
-        this.shaderProgram.cameraZoomUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uCam.zoom");
-        this.shaderProgram.viewportUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uViewport");
-        this.shaderProgram.bounceLimitUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uBounceLimit");
-        this.shaderProgram.seedUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uSeed");
-        this.shaderProgram.frameWeightUniform = 
-                gl.getUniformLocation(this.shaderProgram, "uPreviousFrameWeight");
+        this.initUniforms(this.uniforms, this.shaderProgram);
+    }
+
+    setUniforms(uniforms){
+        for(const [name, uniform] of Object.entries(uniforms)){
+            let keys = Object.keys(uniform);
+            if(keys.includes('location'), keys.includes('value'), keys.includes('set')){
+                // This is a uniform, add it
+                uniform.set.call(gl, uniform.location, uniform.value());
+            } else {
+                // This is not yet a uniform (might be struct), recurse
+                this.setUniforms(uniform);
+            }
+        }
+    }
+
+    initUniforms(uniforms, program, prefix = ''){
+        for(const [name, uniform] of Object.entries(uniforms)){
+            let keys = Object.keys(uniform);
+            if(keys.includes('location'), keys.includes('value'), keys.includes('set')){
+                // This is a uniform, set it's location
+                uniform.location = gl.getUniformLocation(program, prefix + name);
+            } else {
+                // This is not yet a uniform (might be struct), recurse
+                this.initUniforms(uniform, program, prefix + name + '.');
+            }
+        }
     }
 
     createRenderProgram(vertexShader, fragmentShader){

@@ -3,6 +3,11 @@ var gl;
 var renderer;
 
 window.onload = function(){
+    /* Get UI Control Elements */
+    let bounceLimitSlider = document.getElementById('bounceLimit');
+    let apertureSlider = document.getElementById('aperture');
+    let focalLengthSlider = document.getElementById('focalLength');
+
     /* Create webgl context */
     canvas = document.getElementById('canvas');
     gl = createGLContext(canvas);
@@ -48,36 +53,40 @@ window.onload = function(){
             matGlass
         ),
     ];
-    let pathTracer = new PathTracer(objects);
-    
+
     /* Create camera */
-    cam = new Camera(
+    camera = new Camera(
         glMatrix.vec3.fromValues(1, 3, 7),      // Camera pos
         glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
         glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
         Math.PI/4,                              // FOV
-        0,                                      // Aperture
+        parseFloat(apertureSlider.value),       // Aperture
         gl.viewportWidth,
         gl.viewportHeight
     );
 
+    let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
+
     /* Render object */
-    renderer = new Renderer(pathTracer, cam);
+    renderer = new Renderer(pathTracer);
     renderer.init().then(() => renderer.start());
 
     /* Attach UI Controls */
-    let apertureSlider = document.getElementById('aperture');
-    apertureSlider.oninput = (event) => {
-        renderer.camera.aperture = parseFloat(apertureSlider.value);
+    bounceLimitSlider.oninput = () => {
+        pathTracer.bounceLimit = parseInt(bounceLimitSlider.value);
         renderer.reset();
     }
 
-    let focalLengthSlider = document.getElementById('focalLength');
-    focalLengthSlider.oninput = (event) => {
-        renderer.camera.setFocalLength(parseFloat(focalLengthSlider.value));
+    apertureSlider.oninput = () => {
+        camera.aperture = parseFloat(apertureSlider.value);
         renderer.reset();
     }
-} 
+
+    focalLengthSlider.oninput = () => {
+        camera.setFocalLength(parseFloat(focalLengthSlider.value));
+        renderer.reset();
+    }
+}
 
 /**
  * Creates a context for WebGL
