@@ -48,6 +48,7 @@ float schlick(float cos_theta, float eta_ratio);
 float random(vec2 co);
 float random();
 vec3 randomPointOnUnitSphere();
+vec2 randomPointInUnitDisk();
 
 /* Intersection Functions */
 bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin, float tmax);
@@ -84,12 +85,16 @@ void main(void){
     vec2 uv = fragUV + jitter;
 
     // Calculate world position of fragment
-    vec3 pos = uCam.lookAt
+    vec3 frag_pos = uCam.lookAt
             + (uv.x - 0.5) * uCam.right
             + (uv.y - 0.5) * uCam.up;
     
+    // Randomize cam_pos to simulate depth-of-field
+    vec2 offset = uCam.aperture * randomPointInUnitDisk();
+    vec3 cam_pos = uCam.pos + offset.x * normalize(uCam.right) + offset.y * (normalize(uCam.up));
+    
     // Determine color
-    vec3 color = getColor(Ray(uCam.pos, normalize(pos - uCam.pos))); 
+    vec3 color = getColor(Ray(cam_pos, normalize(frag_pos - cam_pos)));
 
     // Average with previous frame
     fragmentColor = uPreviousFrameWeight * texture(uPreviousFrame, fragUV) + (1.0 - uPreviousFrameWeight) * vec4(color, 1.0);
@@ -230,6 +235,13 @@ vec3 randomPointOnUnitSphere(){
     float phi = acos(2.0*v - 1.0);
     
     return vec3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+}
+
+vec2 randomPointInUnitDisk(){
+    // From https://mathworld.wolfram.com/DiskPointPicking.html
+    float r = random();
+    float theta = random()*PI*2.0;
+    return sqrt(r) * vec2(cos(theta), sin(theta));
 }
 
 /* Random number generator */

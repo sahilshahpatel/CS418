@@ -95,6 +95,8 @@ class Renderer{
         gl.uniform3fv(this.shaderProgram.cameraLookAtUniform, this.camera.lookAt);
         gl.uniform3fv(this.shaderProgram.cameraUpUniform, this.camera.up);
         gl.uniform3fv(this.shaderProgram.cameraRightUniform, this.camera.right);
+        gl.uniform1f(this.shaderProgram.cameraApertureUniform, this.camera.aperture);
+        gl.uniform1f(this.shaderProgram.cameraZoomUniform, this.camera.zoom);
         gl.uniform2f(this.shaderProgram.viewportUniform, gl.viewportWidth, gl.viewportHeight);
         gl.uniform1i(this.shaderProgram.bounceLimitUniform, 5);
         gl.uniform1f(this.shaderProgram.seedUniform, time*1000);
@@ -168,6 +170,11 @@ class Renderer{
         gl.useProgram(null);
     }
 
+    reset(){
+        // Setting frameNum to 0 will make the uPreviousFrameWeight 0 which resets the shader
+        this.frameNum = 0;
+    }
+
     createShaderProgram(vertexShader, fragmentShader){
         // Link the shaders together into a program.
         this.shaderProgram = gl.createProgram();
@@ -192,6 +199,10 @@ class Renderer{
                 gl.getUniformLocation(this.shaderProgram, "uCam.up");
         this.shaderProgram.cameraRightUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uCam.right");
+        this.shaderProgram.cameraApertureUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uCam.aperture");
+        this.shaderProgram.cameraZoomUniform = 
+                gl.getUniformLocation(this.shaderProgram, "uCam.zoom");
         this.shaderProgram.viewportUniform = 
                 gl.getUniformLocation(this.shaderProgram, "uViewport");
         this.shaderProgram.bounceLimitUniform = 

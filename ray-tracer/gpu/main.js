@@ -1,5 +1,6 @@
 /* Globals */
 var gl;
+var renderer;
 
 window.onload = function(){
     /* Create webgl context */
@@ -61,8 +62,21 @@ window.onload = function(){
     );
 
     /* Render object */
-    let renderer = new Renderer(pathTracer, cam);
+    renderer = new Renderer(pathTracer, cam);
     renderer.init().then(() => renderer.start());
+
+    /* Attach UI Controls */
+    let apertureSlider = document.getElementById('aperture');
+    apertureSlider.oninput = (event) => {
+        renderer.camera.aperture = parseFloat(apertureSlider.value);
+        renderer.reset();
+    }
+
+    let focalLengthSlider = document.getElementById('focalLength');
+    focalLengthSlider.oninput = (event) => {
+        renderer.camera.setFocalLength(parseFloat(focalLengthSlider.value));
+        renderer.reset();
+    }
 } 
 
 /**
