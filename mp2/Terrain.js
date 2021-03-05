@@ -135,7 +135,7 @@ class Terrain {
     shapeTerrain() {
         const iterations = 100;
         const initialDelta = 0.01;
-        const deltaDropoff = 1; // Math.pow(2, 0.5);
+        const deltaDropoff = 1.01;
 
         // Keep track of min and max Z values
         this.minZ = 0;
@@ -183,7 +183,7 @@ class Terrain {
                     this.setVertex(v, j);
                 }
             }
-
+            
             delta /= deltaDropoff;
         }
     }
