@@ -13,7 +13,6 @@
 <!-- MP2: Modify the shaders to implement Phong shading instead of Gourand! -->
 <script id="shader-vs" type="x-shader/x-vertex">#version 300 es
 // Vertex Shader
-// Implements Gourand shading. See the lecture on "Basic Shading" for details.
 
 // Use high-precision floats if available on this device.
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -22,15 +21,79 @@ precision highp float;
 precision mediump float;
 #endif
 
-in vec3 vertexPosition;
-in vec3 vertexNormal;
+in vec3 aVertexPosition;
+in vec3 aVertexNormal;
 
+uniform vec2 heightRange;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
-uniform vec3 kAmbient;
-uniform vec3 kDiffuse;
+out vec4 vertexColor;
+out vec3 vertexNormalView;
+out vec3 vertexPositionView;
+out vec3 kAmbient;
+out vec3 kDiffuse;
+
+vec3 bezier(vec3 start, vec3 end, float t){
+    return start * (1.0 - t) + end * t;
+}
+
+vec3 bezier2(vec3 start, vec3 mid, vec3 end, float t){
+    return bezier(bezier(start, mid, t), bezier(mid, end, t), t);
+}
+
+vec3 bezier3(vec3 start, vec3 k1, vec3 k2, vec3 end, float t){
+    return bezier(bezier2(start, k1, k2, t), bezier2(k1, k2, end, t), t);
+}
+
+void main(void) {
+    // Transform the vertex position and normal to view coordinates
+    vertexPositionView =(modelViewMatrix * vec4(aVertexPosition, 1.0)).xyz;
+    vertexNormalView = normalize(normalMatrix * aVertexNormal);
+
+    float height = (aVertexPosition.z - heightRange.x) / (heightRange.y - heightRange.x);
+
+    kAmbient = bezier(vec3(0.0), vec3(0.1), height);
+
+    vec3 darkWater = vec3(0.0, 0.0, 0.2);
+    vec3 water = vec3(0.0, 0.0, 0.8);
+    vec3 sand = vec3(0.8, 0.8, 0.7);
+    vec3 grass = vec3(0.2, 1.0, 0.0) * 0.5;
+    vec3 dirt = vec3(0.25, 0.25, 0.0);
+
+    // TODO: There's probably a way to do this without branching...
+
+    float waterline = 0.25;
+    float shoreline = 0.5;
+    if(height < waterline){
+        kDiffuse = bezier(darkWater, water, height / waterline);
+    } 
+    else if(height < shoreline){
+        kDiffuse = bezier2(water, sand, grass, (height - waterline) / (shoreline - waterline));
+    }
+    else {
+        kDiffuse = bezier2(grass, dirt, dirt, (height - shoreline) / (1.0 - shoreline));
+    }
+
+    gl_Position =
+        projectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);
+}
+</script>
+
+<!-- MP2: Modify the shaders to implement Phong shading instead of Gourand! -->
+<script id="shader-fs" type="x-shader/x-fragment">#version 300 es
+// Fragment Shader
+
+// Use high-precision floats if available on this device.
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+in vec3 kAmbient;
+in vec3 kDiffuse;
 uniform vec3 kSpecular;
 uniform float shininess;
 
@@ -39,14 +102,14 @@ uniform vec3 ambientLightColor;
 uniform vec3 diffuseLightColor;
 uniform vec3 specularLightColor;
 
-out vec4 vertexColor;
+in vec3 vertexPositionView;
+in vec3 vertexNormalView;
+in float height;
+
+out vec4 fragmentColor;
 
 
 void main(void) {
-    // Transform the vertex position and normal to view coordinates
-    vec3 vertexPositionView =(modelViewMatrix * vec4(vertexPosition, 1.0)).xyz;
-    vec3 vertexNormalView = normalize(normalMatrix * vertexNormal);
-
     // The camera is at the origin in view coordinates
     vec3 cameraPositionView = vec3(0.0, 0.0, 0.0);
     
@@ -64,34 +127,9 @@ void main(void) {
 
     // Sum up all three lighting components into the color for the vertex,
     // and send it to the fragment shader.
-    vertexColor = vec4((  kAmbient * ambientLightColor
+    fragmentColor = vec4((  kAmbient * ambientLightColor
                         + kDiffuse * diffuseLightColor * diffuseWeight
                         + kSpecular * specularLightColor * specularWeight), 1.0);
-
-    gl_Position =
-        projectionMatrix * modelViewMatrix * vec4(vertexPosition, 1.0);
-}
-</script>
-
-<!-- MP2: Modify the shaders to implement Phong shading instead of Gourand! -->
-<script id="shader-fs" type="x-shader/x-fragment">#version 300 es
-// Fragment Shader
-// Implements Gourand shading. See the lecture on "Basic Shading" for details.
-
-// Use high-precision floats if available on this device.
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-
-in vec4 vertexColor;
-out vec4 fragmentColor;
-
-
-void main(void) {
-    // Interpolate the computed vertex color for each fragment.
-    fragmentColor = vertexColor;
 }
 </script>
 

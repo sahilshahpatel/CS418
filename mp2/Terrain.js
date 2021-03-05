@@ -134,8 +134,12 @@ class Terrain {
      */
     shapeTerrain() {
         const iterations = 100;
-        const initialDelta = 0.005;
+        const initialDelta = 0.01;
         const deltaDropoff = 1; // Math.pow(2, 0.5);
+
+        // Keep track of min and max Z values
+        this.minZ = 0;
+        this.maxZ = 0;
 
         // Set full range to be the whole terrain for now
         let dx = this.maxX - this.minX;
@@ -171,6 +175,11 @@ class Terrain {
                     sigmoid *= sigmoid;
 
                     v[2] += modifier * delta * sigmoid;
+                    
+                    // Update min/max Z values
+                    if(v[2] > this.maxZ) this.maxZ = v[2];
+                    if(v[2] < this.minZ) this.minZ = v[2];
+
                     this.setVertex(v, j);
                 }
             }
