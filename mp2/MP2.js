@@ -196,7 +196,7 @@ function setupShaders() {
 /**
  * Draws the terrain to the screen.
  */
-function draw() {
+function draw(time) {
   // Transform the clip coordinates so the render fills the canvas dimensions.
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   // Clear the color buffer and the depth buffer.
@@ -209,10 +209,14 @@ function draw() {
                             gl.viewportWidth / gl.viewportHeight,
                             near, far);
   
-  // Generate the view matrix using lookat.
-  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, -1.0);
-  const eyePt = glMatrix.vec3.fromValues(0.0, 0.0, 3.0);
-  const up = glMatrix.vec3.fromValues(0.0, 1.0, 0.0);
+  // eyePt rotates around the terrain over time
+  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
+  const theta = time * 0.0002;
+  const radius = 2;
+  const eyePt = glMatrix.vec3.fromValues(radius * Math.cos(theta), radius * Math.sin(theta), 0.75);
+  glMatrix.vec3.add(eyePt, eyePt, lookAtPt);
+  const up = glMatrix.vec3.fromValues(0, 0, 1);
+
   glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
   setMatrixUniforms();
@@ -295,7 +299,7 @@ function setLightUniforms(a, d, s, loc) {
  */
  function animate(currentTime) {
   // Draw the frame.
-  draw();
+  draw(currentTime);
   // Animate the next frame. 
   requestAnimationFrame(animate);
 }
