@@ -41,6 +41,12 @@ struct Plane{
     vec3 normal;
 };
 
+struct Triangle{
+    vec3 a;
+    vec3 b;
+    vec3 c;
+};
+
 /* Helper Functions */
 vec3 reflect(vec3 v, vec3 n);
 vec3 refract(vec3 v, vec3 n, float eta_ratio);
@@ -53,6 +59,7 @@ vec2 randomPointInUnitDisk();
 /* Intersection Functions */
 bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin, float tmax);
 bool planeIntersection(out Intersection it, Plane plane, Ray ray, float tmin, float tmax);
+bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin, float tmax);
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
 /* Scattering Functions */
@@ -160,14 +167,54 @@ bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin,
 
 bool planeIntersection(out Intersection it, Plane plane, Ray ray, float tmin, float tmax){
     vec3 ray_to_plane = plane.center - ray.o;
-    float t = dot(plane.normal, ray_to_plane) / dot(plane.normal, ray.d);
+    
+    float denominator = dot(plane.normal, ray.d);
+    if(denominator == 0.0){ return false; }
+    float t = dot(plane.normal, ray_to_plane) / denominator;
+
+    if(t < tmin || t > tmax){ 
+        return false; 
+    }
+
+    vec3 p = ray.o + t*ray.d;
+    it = Intersection(t, p, plane.normal);
+    return true;
+}
+
+bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin, float tmax){
+    // Triangle vectors
+    vec3 edge0 = tri.b - tri.a;
+    vec3 edge1 = tri.c - tri.b;
+    vec3 edge2 = tri.a - tri.c;
+    vec3 n = normalize(cross(edge2, edge0)); 
+
+    // First find intersection with triangle plane
+    vec3 ray_to_plane = tri.a - ray.o;
+    float denominator = dot(n, ray.d);
+    if(denominator == 0.0){ return false; }
+    float t = dot(n, ray_to_plane) / denominator;
 
     if(t < tmin || t > tmax){
         return false;
     }
 
     vec3 p = ray.o + t*ray.d;
-    it = Intersection(t, p, plane.normal);
+
+    /* Check that p is inside triangle */
+    // From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
+    
+    vec3 c0 = p - tri.a;
+    vec3 c1 = p - tri.b;
+    vec3 c2 = p - tri.c;
+    
+    if( dot(n, cross(edge0, c0)) <= 0.0 ||
+        dot(n, cross(edge1, c1)) <= 0.0 ||
+        dot(n, cross(edge2, c2)) <= 0.0 ){
+        
+        return false;
+    }
+
+    it = Intersection(t, p, n);
     return true;
 }
 

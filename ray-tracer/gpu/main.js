@@ -52,6 +52,12 @@ window.onload = function(){
             1,
             matGlass
         ),
+        new Triangle(
+            glMatrix.vec3.fromValues(0, 0, 0),
+            glMatrix.vec3.fromValues(0, 5, 0),
+            glMatrix.vec3.fromValues(5, 0, 0),
+            matRed
+        ),
     ];
 
     /* Create camera */
