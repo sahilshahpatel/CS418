@@ -60,6 +60,24 @@ class Renderer{
                 value: () => this.frameNum / (this.frameNum + 1),
                 set: gl.uniform1f,
             },
+
+            uPreviousFrame: {
+                location: undefined,
+                value: () => 0,
+                set: gl.uniform1i
+            },
+
+            uBVH: {
+                location: undefined,
+                value: () => 1,
+                set: gl.uniform1i
+            },
+
+            uBVHSize: {
+                location: undefined,
+                value: () => [this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields],
+                set: gl.uniform2fv
+            }
         }
     }
 
@@ -91,6 +109,7 @@ class Renderer{
                 let ext = gl.getExtension("EXT_color_buffer_float");
                 for(let i = 0; i < 2; i++){
                     this.frameTextures.push(gl.createTexture());
+                    gl.activeTexture(gl.TEXTURE0 + this.uniforms.uPreviousFrame.value());
                     gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[i]);
 
                     // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexParameter.xhtml for details
@@ -105,6 +124,23 @@ class Renderer{
                     else{
                         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.viewportWidth, gl.viewportHeight, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
                     }
+                }
+
+                // Create BVH texture
+                this.BVHTexture = gl.createTexture();
+                gl.activeTexture(gl.TEXTURE0 + this.uniforms.uBVH.value());
+                gl.bindTexture(gl.TEXTURE_2D, this.BVHTexture);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                if(ext){
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
+                        0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.data);
+                }
+                else{
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
+                        0, gl.RGBA, gl.UNSIGNED_BYTE, this.pathTracer.bvh.data);
                 }
                 gl.bindTexture(gl.TEXTURE_2D, null);
 
@@ -159,8 +195,12 @@ class Renderer{
         // Use the vertex array object that we set up.
         gl.bindVertexArray(this.vertexArrayObject);
 
-        // Send old frame
+        // Send textures (previous frame, BVH)
+        gl.activeTexture(gl.TEXTURE0 + this.uniforms.uPreviousFrame.value());
         gl.bindTexture(gl.TEXTURE_2D, this.frameTextures[this.currFramebuffer]);
+
+        gl.activeTexture(gl.TEXTURE0 + this.uniforms.uBVH.value());
+        gl.bindTexture(gl.TEXTURE_2D, this.BVHTexture);
 
         // Store new frame
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);

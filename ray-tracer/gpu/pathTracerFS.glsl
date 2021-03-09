@@ -1,6 +1,11 @@
 
 // #version 300 es <-- Included by PathTracerGPU object with other macros
 
+/* Macros */
+// Use if instead of switch for precision catching
+#define CASE(flag, value) if(flag < float(value) + 0.5)
+#define CASEN(flag, value) if(flag < float(value) - 0.5)
+
 /* Structures */
 struct Camera{
     vec3 pos;
@@ -47,10 +52,26 @@ struct Triangle{
     vec3 c;
 };
 
+struct BoundingBox{
+    vec3 start;
+    vec3 end;
+};
+
+struct BVHNode{
+    vec3[3] shape;
+    float type;
+    float material;
+    vec2 scatterData;
+    float texture;
+    vec3 color;     // If texture = 0
+    vec2[3] texCo;  // If texture > 0
+};
+
 /* Helper Functions */
 vec3 reflect(vec3 v, vec3 n);
 vec3 refract(vec3 v, vec3 n, float eta_ratio);
 float schlick(float cos_theta, float eta_ratio);
+BVHNode getBVHNode(int i);
 float random(vec2 co);
 float random();
 vec3 randomPointOnUnitSphere();
@@ -62,10 +83,14 @@ bool planeIntersection(out Intersection it, Plane plane, Ray ray, float tmin, fl
 bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin, float tmax);
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
+HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax);
+bool BVHNodeIntersection(BVHNode node, Ray ray, float tmin, float tmax);
+
 /* Scattering Functions */
 Ray lambertianScatter(Ray ray, vec3 p, vec3 n);
 Ray metalScatter(Ray ray, vec3 p, vec3 n, float fuzz);
 Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta);
+void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n);
 
 /* Path Tracer Functions */
 vec3 getColor(Ray ray);
@@ -74,10 +99,12 @@ vec3 getColor(Ray ray);
 uniform vec2 uViewport;
 uniform Camera uCam;
 uniform int uBounceLimit;
-uniform int uDetail;
 uniform float uSeed;
 uniform float uPreviousFrameWeight;
 uniform sampler2D uPreviousFrame;
+uniform sampler2D uBVH;
+uniform vec2 uBVHSize;
+
 in vec2 fragUV;
 out vec4 fragmentColor;
 
@@ -115,7 +142,12 @@ vec3 getColor(Ray ray){
 
     // Loop over bouce limit (we can't do recursion in GLSL!)
     for(int i = 0; i < uBounceLimit; i++){
+        #ifdef USE_BVH
+        HitRec hit = sceneIntersectionBVH(ray, EPSILON, INFINITY);
+        #else
         HitRec hit = sceneIntersection(ray, EPSILON, INFINITY);
+        #endif
+
         
         if(hit.intersect.t >= INFINITY){
             break;
@@ -140,6 +172,58 @@ HitRec sceneIntersection(Ray ray, float tmin, float tmax){
     SCENE_INTERSECTIONS
 
     return result;
+}
+
+HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
+    int[MAX_BVH_STACK] stack;
+    stack[0] = 0; // Start at root node
+    int stackp = 0;
+
+    HitRec result;
+    result.intersect = Intersection(tmin, vec3(0.0), vec3(0.0));
+
+    #define LEFT(i)  (2*i + 1)
+    #define RIGHT(i) (2*i + 2)
+
+    // Loop until our stack is empty
+    while(stackp >= 0){
+        int n = stack[stackp];
+        BVHNode node = getBVHNode(n);
+
+        CASE(node.type, 0){
+            // BVH Node is internal, check self and recurse
+            if(!BVHNodeIntersection(node, ray, tmin, tmax)){
+                // Ray misses this box, so we can ignore it
+                stackp = stackp - 1; // pop
+                continue;
+            }
+            
+            // We must check (push) children
+            // stackp = stackp - 1; // Dispose of self (cancels with below)
+            // stackp = stackp + 1; // Begin push of left (cancels with above)
+            stack[stackp] = LEFT(n);
+            stackp = stackp + 1;
+            stack[stackp] = RIGHT(n);
+            continue;
+        }
+        CASE(node.type, 1){
+            Intersection current;
+            Sphere s = Sphere(node.shape[0], node.shape[1].x);
+            if(sphereIntersection(current, s, ray, result.intersect.t, tmax)){
+                result.intersect = current;
+                setMaterial(result, node, ray, current.p, current.n);
+            }
+
+            // This node has been handled, we can pop now
+            stackp = stackp - 1;
+            continue;
+        }
+    }
+
+    return result;
+
+    #undef LEFT
+    #undef RIGHT
 }
 
 bool sphereIntersection(out Intersection it, Sphere sphere, Ray ray, float tmin, float tmax){            
@@ -218,6 +302,54 @@ bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin
     return true;
 }
 
+bool BVHNodeIntersection(BVHNode node, Ray ray, float tmin, float tmax){
+    BoundingBox box;
+    box.start = node.shape[0].xyz;
+    box.end = node.shape[1].xyz;
+    
+    // From https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies
+    vec3 t_min = vec3(tmin);
+    vec3 t_max = vec3(tmax);
+    
+    vec3 invD = vec3(1.0) / ray.d;
+    vec3 t0 = (box.start - ray.o) * invD;
+    vec3 t1 = (box.end - ray.o) * invD;
+
+    // Check X-boundaries
+    if (invD.x < 0.0){
+        float temp = t0.x;
+        t0.x = t1.x;
+        t1.x = temp;
+    }
+    t_min.x = t0.x > t_min.x ? t0.x : t_min.x;
+    t_max.x = t1.x < t_max.x ? t1.x : t_max.x;
+    if (t_max.x <= t_min.x)
+        return false;
+
+
+    if (invD.y < 0.0){
+        float temp = t0.y;
+        t0.y = t1.y;
+        t1.y = temp;
+    }
+    t_min.y = t0.y > t_min.y ? t0.y : t_min.y;
+    t_max.y = t1.y < t_max.y ? t1.y : t_max.y;
+    if (t_max.y <= t_min.y)
+        return false;
+
+    if (invD.z < 0.0){
+        float temp = t0.z;
+        t0.z = t1.z;
+        t1.z = temp;
+    }
+    t_min.z = t0.z > t_min.z ? t0.z : t_min.z;
+    t_max.z = t1.z < t_max.z ? t1.z : t_max.z;
+    if (t_max.z <= t_min.z)
+        return false;
+
+    return true;
+}
+
 /* Scatter Functions */
 Ray lambertianScatter(Ray r, vec3 p, vec3 n){
     vec3 dir = normalize(randomPointOnUnitSphere() + n);
@@ -252,6 +384,26 @@ Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta){
     return Ray(p, dir);
 }
 
+/** Sets the material of hit based on the node's material type
+ */
+void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n){
+    // Color is material type independent
+    CASE(node.texture, 0){
+        // Solid color
+        hit.material.color = node.color;
+        return;
+    }
+    // CASE(node.texture, 1){
+    //     // TODO: use texture to get color
+    // }
+
+    CASE(node.material, 0){
+        // Lambertian
+        hit.material.scatter = lambertianScatter(ray, p, n);
+        return;
+    }
+}
+
 /* Helper functions */
 vec3 reflect(vec3 v, vec3 n){
     return v - 2.0*dot(v, n)*n;
@@ -273,6 +425,43 @@ float schlick(float cos_theta, float eta_ratio){
     return r + (1.0 - r)*pow(1.0 - cos_theta, 5.0);
 }
 
+BVHNode getBVHNode(int i){
+    BVHNode node;
+
+    // Sample BVH texture for each vec4
+    float tex = float(i) + 0.5;
+    vec4 data0 = texture(uBVH, vec2(tex, 0.5) / uBVHSize);
+    vec4 data1 = texture(uBVH, vec2(tex, 1.5) / uBVHSize);
+    vec4 data2 = texture(uBVH, vec2(tex, 2.5) / uBVHSize);
+    vec4 data3 = texture(uBVH, vec2(tex, 3.5) / uBVHSize);
+    vec4 data4 = texture(uBVH, vec2(tex, 4.5) / uBVHSize);
+
+    /* BVHNode comes in as vec4[5]
+    * [0].w                    => node type (0 = internal)
+    * [1].w                    => material type
+    * [2].w                    => texture number (0 = solid color)
+    * [0:2].xyz                => shape data
+    * [3].xy, [3].zw, [4].xy   => texCo[0:2] (for textures)
+    * [3].xyz                  => color (for solid color)
+    * [4].zw                   => material scatter data
+    */
+
+    // Fill in node struct
+    node.type           = data0.w;
+    node.material       = data1.w;
+    node.texture        = data2.w;
+    node.shape[0]       = data0.xyz;
+    node.shape[1]       = data1.xyz;
+    node.shape[2]       = data2.xyz;
+    node.texCo[0]       = data3.xy;
+    node.texCo[1]       = data3.zw;
+    node.texCo[2]       = data4.xy;
+    node.color          = data3.xyz;
+    node.scatterData    = data4.zw;
+
+    return node;
+}
+
 vec3 randomPointOnUnitSphere(){
     // From https://mathworld.wolfram.com/SpherePointPicking.html
     float u = random();
@@ -292,8 +481,7 @@ vec2 randomPointInUnitDisk(){
 }
 
 /* Random number generator */
-highp float random(vec2 co)
-{
+highp float random(vec2 co){
     // From http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
     highp float a = 12.9898;
     highp float b = 78.233;

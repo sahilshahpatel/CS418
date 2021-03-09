@@ -20,6 +20,32 @@ class Sphere extends Intersectible{
         let objConstructor = `Sphere(${asVec3(this.center)}, ${asFloat(this.radius)})`;
         return `sphereIntersection(current.intersect, ${objConstructor}, ray, tmin, tmax)`;
     }
+
+    getIntersectionData(){
+        return [
+            glMatrix.vec4.fromValues(...this.center, 1),
+            glMatrix.vec4.fromValues(this.radius, 0, 0, -1), // Lambertian for now 
+            glMatrix.vec4.create(),
+            glMatrix.vec4.fromValues(1, 0, 0, 0), // Red
+            glMatrix.vec4.create(),
+        ];
+    }
+
+    getBoundingBox(){
+        let r =  glMatrix.vec3.fromValues(this.radius, this.radius, this.radius);
+
+        let start = glMatrix.vec3.clone(this.center);
+        glMatrix.vec3.sub(start, start, r);
+
+        let end = glMatrix.vec3.clone(this.center);
+        glMatrix.vec3.add(end, end, r);
+
+        return new BoundingBox(start, end);
+    }
+
+    getCentroid(){
+        return this.center;
+    }
 }
 
 class Plane extends Intersectible{

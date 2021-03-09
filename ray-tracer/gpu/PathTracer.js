@@ -4,6 +4,10 @@ class PathTracer{
         this.camera = camera;
         this.bounceLimit = bounceLimit;
 
+        // DEBUGGING BVH:
+        this.bvh = BVH.test(1); 
+        // this.bvh = new BVH(objects);
+
         this.infinity = 1000.0;
         this.epsilon  = 0.0001;
     }
@@ -48,6 +52,8 @@ class PathTracer{
                     #define INFINITY ${this.infinity.toFixed(1)}
                     #define EPSILON ${this.epsilon}
                     #define PI 3.141592
+                    #define MAX_BVH_STACK 100 // TODO: set this 'dynamically' based on BVH depth
+                    #define USE_BVH
 
                     #define SCENE_INTERSECTIONS ${sceneIntersections}
 
