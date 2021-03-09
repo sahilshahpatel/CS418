@@ -11,7 +11,7 @@ class BVH{
         this.build(this.objects, 0);
     }
 
-    static test(n = 100){
+    static test(n = 10){
         // Create spheres
         let objects = [];
         let center = glMatrix.vec3.create();
@@ -98,7 +98,7 @@ class BoundingBox {
      */
     static bound(objects){
         let start = glMatrix.vec3.clone(objects[0].getBoundingBox().start);
-        let end = glMatrix.vec3.clone(objects[1].getBoundingBox().end);
+        let end = glMatrix.vec3.clone(objects[0].getBoundingBox().end);
         
         for(let b = 1; b < objects.length; b++){
             glMatrix.vec3.min(start, start, objects[b].getBoundingBox().start);

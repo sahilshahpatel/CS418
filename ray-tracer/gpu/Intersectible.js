@@ -24,9 +24,9 @@ class Sphere extends Intersectible{
     getIntersectionData(){
         return [
             glMatrix.vec4.fromValues(...this.center, 1),
-            glMatrix.vec4.fromValues(this.radius, 0, 0, -1), // Lambertian for now 
+            glMatrix.vec4.fromValues(this.radius, 0, 0, 0), // Lambertian for now 
             glMatrix.vec4.create(),
-            glMatrix.vec4.fromValues(1, 0, 0, 0), // Red
+            glMatrix.vec4.fromValues(...this.material.color, 0), // Red
             glMatrix.vec4.create(),
         ];
     }

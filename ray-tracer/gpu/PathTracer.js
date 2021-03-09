@@ -5,8 +5,7 @@ class PathTracer{
         this.bounceLimit = bounceLimit;
 
         // DEBUGGING BVH:
-        this.bvh = BVH.test(1); 
-        // this.bvh = new BVH(objects);
+        this.bvh = new BVH(objects);
 
         this.infinity = 1000.0;
         this.epsilon  = 0.0001;

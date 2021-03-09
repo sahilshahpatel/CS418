@@ -141,14 +141,13 @@ vec3 getColor(Ray ray){
     vec3 color = vec3(0.7, 0.8, 1)*y + vec3(1.0, 1.0, 1.0)*(1.0 - y);
 
     // Loop over bouce limit (we can't do recursion in GLSL!)
-    for(int i = 0; i < uBounceLimit; i++){
+    for(int i = 0; i < uBounceLimit; i++){        
         #ifdef USE_BVH
         HitRec hit = sceneIntersectionBVH(ray, EPSILON, INFINITY);
         #else
         HitRec hit = sceneIntersection(ray, EPSILON, INFINITY);
         #endif
 
-        
         if(hit.intersect.t >= INFINITY){
             break;
         }
@@ -180,7 +179,7 @@ HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
     int stackp = 0;
 
     HitRec result;
-    result.intersect = Intersection(tmin, vec3(0.0), vec3(0.0));
+    result.intersect = Intersection(tmax, vec3(0.0), vec3(0.0));
 
     #define LEFT(i)  (2*i + 1)
     #define RIGHT(i) (2*i + 2)
@@ -209,7 +208,7 @@ HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
         CASE(node.type, 1){
             Intersection current;
             Sphere s = Sphere(node.shape[0], node.shape[1].x);
-            if(sphereIntersection(current, s, ray, result.intersect.t, tmax)){
+            if(sphereIntersection(current, s, ray, tmin, result.intersect.t)){
                 result.intersect = current;
                 setMaterial(result, node, ray, current.p, current.n);
             }
@@ -391,9 +390,8 @@ void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n){
     CASE(node.texture, 0){
         // Solid color
         hit.material.color = node.color;
-        return;
     }
-    // CASE(node.texture, 1){
+    // else CASE(node.texture, 1){
     //     // TODO: use texture to get color
     // }
 
