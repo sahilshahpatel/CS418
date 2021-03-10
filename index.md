@@ -1,6 +1,6 @@
 ## Sahil's CS 418 (Interactive Computer Graphics) Code Repository
 
-In this repository you can find my code for all of my CS 418 Machine Problems. You can also find my [ray tracer](/ray-tracer/gpu).
+In this repository you can find my code for all of my CS 418 Machine Problems. You can also find my [ray tracer](ray-tracer/gpu).
 
 ### Ray Tracer
 I began the ray tracer in JavaScript, since CPU-based ray tracing is still the most common type. When it started to take quite a while for my basic scenes to render,
