@@ -4,7 +4,7 @@ In this repository you can find my code for all of my CS 418 Machine Problems. Y
 
 ### Ray Tracer
 I began the ray tracer in JavaScript, since CPU-based ray tracing is still the most common type. When it started to take quite a while for my basic scenes to render,
-I decided to try GPU-based ray tracing as well. I opted to use a fragment shader, following the likes of [MadeByEvan](http://madebyevan.com/webgl-path-tracing/).
+I decided to try GPU-based ray tracing instead. I opted to use only a fragment shader, following the likes of [MadeByEvan](http://madebyevan.com/webgl-path-tracing/). I started by recreating the functionality already present in the JS version (except for texturing), and then added some new features including triangle objects and a bounding volume hierarchy.
 
 Points of Interest:
 - Is completely fragment shader-based
