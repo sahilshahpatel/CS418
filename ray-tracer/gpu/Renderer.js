@@ -106,7 +106,9 @@ class Renderer{
 
                 // Create two textures to hold last frame and current frame (adopted from http://madebyevan.com/webgl-path-tracing/webgl-path-tracing.js)
                 this.frameTextures = [];
-                let ext = gl.getExtension("EXT_color_buffer_float");
+                if(!gl.getExtension("EXT_color_buffer_float")){
+                    throw "Error: This requires EXT_color_buffer_float extension to work properly";
+                }
                 for(let i = 0; i < 2; i++){
                     this.frameTextures.push(gl.createTexture());
                     gl.activeTexture(gl.TEXTURE0 + this.uniforms.uPreviousFrame.value());
@@ -118,30 +120,21 @@ class Renderer{
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     
-                    if(ext){
-                        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, gl.viewportWidth, gl.viewportHeight, 0, gl.RGBA, gl.FLOAT, null);
-                    }
-                    else{
-                        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.viewportWidth, gl.viewportHeight, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-                    }
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, gl.viewportWidth, gl.viewportHeight, 0, gl.RGBA, gl.FLOAT, null);
                 }
 
                 // Create BVH texture
                 this.BVHTexture = gl.createTexture();
                 gl.activeTexture(gl.TEXTURE0 + this.uniforms.uBVH.value());
                 gl.bindTexture(gl.TEXTURE_2D, this.BVHTexture);
+
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                if(ext){
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
-                        0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.data);
-                }
-                else{
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
-                        0, gl.RGBA, gl.UNSIGNED_BYTE, this.pathTracer.bvh.data);
-                }
+
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
+                    0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.data);
                 gl.bindTexture(gl.TEXTURE_2D, null);
 
                 /* Set up vertex position buffer */
