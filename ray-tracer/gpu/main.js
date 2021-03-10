@@ -22,36 +22,36 @@ window.onload = function(){
 
     /* Create scene */
     let objects = [
-        // new Plane(
-        //     glMatrix.vec3.fromValues(0, -1, 0),
-        //     glMatrix.vec3.fromValues(0, 1, 0),
-        //     matGray
-        // ),
-        new Sphere(
-            glMatrix.vec3.fromValues(-1, 0, -1),
-            1,
-            matGreen
-        ),
-        new Sphere(
-            glMatrix.vec3.fromValues(1, 0, 1),
-            1,
-            matRed
-        ),
-        new Sphere(
-            glMatrix.vec3.fromValues(1, 0, -1),
-            1,
-            matNormals
-        ),
-        new Sphere(
-            glMatrix.vec3.fromValues(-1, 0, 1),
-            1,
-            matSteel
-        ),
-        new Sphere(
+        new Plane(
+            glMatrix.vec3.fromValues(0, -1, 0),
             glMatrix.vec3.fromValues(0, 1, 0),
-            1,
-            matGlass
+            matGray
         ),
+        // new Sphere(
+        //     glMatrix.vec3.fromValues(-1, 0, -1),
+        //     1,
+        //     matGreen
+        // ),
+        // new Sphere(
+        //     glMatrix.vec3.fromValues(1, 0, 1),
+        //     1,
+        //     matRed
+        // ),
+        // new Sphere(
+        //     glMatrix.vec3.fromValues(1, 0, -1),
+        //     1,
+        //     matNormals
+        // ),
+        // new Sphere(
+        //     glMatrix.vec3.fromValues(-1, 0, 1),
+        //     1,
+        //     matSteel
+        // ),
+        // new Sphere(
+        //     glMatrix.vec3.fromValues(0, 1, 0),
+        //     1,
+        //     matGlass
+        // ),
         // new Triangle(
         //     glMatrix.vec3.fromValues(0, 0, 0),
         //     glMatrix.vec3.fromValues(0, 5, 0),
@@ -71,11 +71,19 @@ window.onload = function(){
         gl.viewportHeight
     );
 
-    let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
+    // Bunny mesh has +Z as up and is too big
+    let bunnyMatrix = glMatrix.mat4.create();
+    glMatrix.mat4.fromXRotation(bunnyMatrix, -Math.PI/2);
+    glMatrix.mat4.scale(bunnyMatrix, bunnyMatrix, glMatrix.vec3.fromValues(0.03, 0.03, 0.03));
+    let bunny = new STLMesh('bunny.stl', bunnyMatrix, matRed);
+    bunny.init().then(() => {
+        objects = objects.concat(bunny.triangles);
+        let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
 
-    /* Render object */
-    renderer = new Renderer(pathTracer);
-    renderer.init().then(() => renderer.start());
+        /* Render object */
+        renderer = new Renderer(pathTracer);
+        renderer.init().then(() => renderer.start());
+    });
 
     /* Attach UI Controls */
     bounceLimitSlider.oninput = () => {

@@ -4,7 +4,6 @@ class PathTracer{
         this.camera = camera;
         this.bounceLimit = bounceLimit;
 
-        // DEBUGGING BVH:
         this.bvh = new BVH(objects);
 
         this.infinity = 1000.0;

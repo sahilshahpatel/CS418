@@ -205,18 +205,32 @@ HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
             stack[stackp] = RIGHT(n);
             continue;
         }
-        CASE(node.type, 1){
-            Intersection current;
-            Sphere s = Sphere(node.shape[0], node.shape[1].x);
-            if(sphereIntersection(current, s, ray, tmin, result.intersect.t)){
-                result.intersect = current;
-                setMaterial(result, node, ray, current.p, current.n);
-            }
 
-            // This node has been handled, we can pop now
-            stackp = stackp - 1;
-            continue;
+        // BVHNode is a leaf (intersectible), so check for intersection
+        Intersection current;
+        bool contact = false;
+        CASE(node.type, 1){
+            Sphere s = Sphere(node.shape[0], node.shape[1].x);
+            contact = sphereIntersection(current, s, ray, tmin, result.intersect.t);
         }
+        else CASE(node.type, 2){
+            Plane pl = Plane(node.shape[0], node.shape[1]);
+            contact = planeIntersection(current, pl, ray, tmin, result.intersect.t);
+        }
+        else CASE(node.type, 3){
+            Triangle tri = Triangle(node.shape[0], node.shape[1], node.shape[2]);
+            contact = triangleIntersection(current, tri, ray, tmin, result.intersect.t);
+        }
+
+        // Update result if we hit successfully
+        if(contact){
+            result.intersect = current;
+            setMaterial(result, node, ray, current.p, current.n);
+        }
+        
+        // This node has been handled, we can pop now
+        stackp = stackp - 1;
+        continue;
     }
 
     return result;
@@ -396,9 +410,21 @@ void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n){
     // }
 
     CASE(node.material, 0){
-        // Lambertian
+        // No material = solid color
+        hit.material.scatter = Ray(vec3(0.0), vec3(0.0));
+    }
+    else CASE(node.material, 1){
         hit.material.scatter = lambertianScatter(ray, p, n);
-        return;
+    }
+    else CASE(node.material, 2){
+        hit.material.scatter = metalScatter(ray, p, n, node.scatterData.x);
+    }
+    else CASE(node.material, 3){
+        hit.material.scatter = dielectricScatter(ray, p, n, node.scatterData.x);
+    }
+    else CASE(node.material, 4){
+        hit.material.scatter = Ray(vec3(0.0), vec3(0.0));
+        hit.material.color = 0.5*n + 0.5;                   // Special case material which modifies color
     }
 }
 

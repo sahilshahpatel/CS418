@@ -41,7 +41,7 @@ class BVH{
     build(objects, i){
         if(objects.length == 1){
             // For single objects, copy in their data
-            let data = objects[0].getIntersectionData();
+            let data = objects[0].getBVHData();
             this.__setData(data, i);
         }
         else{
@@ -49,13 +49,25 @@ class BVH{
 
             // Find bounding box for the collection and put it in tree
             let box = BoundingBox.bound(objects);
-            this.__setData(box.getIntersectionData(), i);
+            this.__setData(box.getBVHData(), i);
 
             // Pick random dimension
             let dim = Math.floor(Math.random() * 1000) % 3;
 
-            // Sort objects by centroid in this dimension
-            objects.sort((a, b) => a.getCentroid()[dim] - b.getCentroid()[dim]);
+            // Sort objects by bounding box center (fake centroid) in this dimension
+            objects.sort((a, b) => {
+                let ac = glMatrix.vec3.create();
+                let ab = a.getBoundingBox();
+                glMatrix.vec3.add(ac, ab.start, ab.end);
+                glMatrix.vec3.scale(ac, ac, 0.5);
+
+                let bc = glMatrix.vec3.create();
+                let bb = b.getBoundingBox();
+                glMatrix.vec3.add(bc, bb.start, bb.end);
+                glMatrix.vec3.scale(bc, bc, 0.5);
+                
+                return ac[dim] - bc[dim];
+            });
 
             // Put half of objects in each subtree
             let p = Math.floor(objects.length / 2);
@@ -82,7 +94,7 @@ class BoundingBox {
         this.end = glMatrix.vec3.clone(end);
     }
 
-    getIntersectionData(){
+    getBVHData(){
         return [
             glMatrix.vec4.fromValues(...this.start, 0),
             glMatrix.vec4.fromValues(...this.end, 0), 
