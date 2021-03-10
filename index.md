@@ -12,7 +12,7 @@ Points of Interest:
 - Implements a Bounding Volume Hierarchy traversal in the fragment shader to speed up ray intersection checks
 
 ### MP1
-In our first MP we learned about the basics of WebGL and created two animations using affine transforms and vertex buffer changes
+In our [first MP](mp1/mp1.html) we learned about the basics of WebGL and created two animations using affine transforms and vertex buffer changes
 
 ### MP2
-In our second MP we learned about terrain generation. We used the faulting method and a vertex shader-based color map.
+In our [second MP](mp2/mp2.html) we learned about terrain generation. We used the faulting method and a vertex shader-based color map.
