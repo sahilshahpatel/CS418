@@ -15,4 +15,4 @@ Points of Interest:
 In our [first MP](mp1/mp1.html) we learned about the basics of WebGL and created two animations using affine transforms and vertex buffer changes
 
 ### MP2
-In our [second MP](mp2/mp2.html) we learned about terrain generation. We used the faulting method and a vertex shader-based color map.
+In our [second MP](mp2/MP2.html) we learned about terrain generation. We used the faulting method and a vertex shader-based color map.
