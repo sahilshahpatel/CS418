@@ -6,6 +6,7 @@ class Renderer{
         this.frameNum = 0;
         this.currFramebuffer = 0;
         this.requestAnimationFrameID = undefined;
+        this.frameTimes = [];
 
         // Naming conventions based on names in path tracer shader code
         this.uniforms = {
@@ -260,10 +261,17 @@ class Renderer{
     }
 
     start(){
+        this.frameTimes = [];
         this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
     }
 
     animate(time){
+        // Get moving average FPS and update list
+        this.frameTimes.push(time);
+        this.frameTimes = this.frameTimes.slice(-50);
+        let fps = this.frameTimes.length == 1 ? 0 : 1000 * this.frameTimes.length / (this.frameTimes[this.frameTimes.length - 1] - this.frameTimes[0]);
+        document.getElementById('fps').innerHTML = fps.toFixed(1);
+
         this.update(time);
         this.render();
         this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
@@ -278,6 +286,7 @@ class Renderer{
     reset(){
         // Setting frameNum to 0 will make the uPreviousFrameWeight 0 which resets the shader
         this.frameNum = 0;
+        this.frameTimes = [];
     }
 
     createShaderProgram(vertexShader, fragmentShader){

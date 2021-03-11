@@ -77,7 +77,7 @@ window.onload = function(){
     glMatrix.mat4.scale(bunnyMatrix, bunnyMatrix, glMatrix.vec3.fromValues(0.03, 0.03, 0.03));
     let bunny = new STLMesh('bunny.stl', bunnyMatrix, matGreen);
     bunny.init().then(() => {
-        objects = objects.concat(bunny.triangles);
+        // objects = objects.concat(bunny.triangles);
         let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
 
         /* Render object */
