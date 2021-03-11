@@ -75,7 +75,19 @@ class Renderer{
 
             uBVHSize: {
                 location: undefined,
-                value: () => [this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields],
+                value: () => [this.pathTracer.bvh.nodes, this.pathTracer.bvh.treeFields],
+                set: gl.uniform2fv
+            },
+
+            uObjects: {
+                location: undefined,
+                value: () => 2,
+                set: gl.uniform1i
+            },
+
+            uObjectsSize: {
+                location: undefined,
+                value: () => [this.pathTracer.bvh.objects.length, this.pathTracer.bvh.objFields],
                 set: gl.uniform2fv
             }
         }
@@ -133,9 +145,21 @@ class Renderer{
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.nodes, this.pathTracer.bvh.fields,
-                    0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.data);
-                gl.bindTexture(gl.TEXTURE_2D, null);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.nodes, this.pathTracer.bvh.treeFields,
+                    0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.treeData);
+                
+                // Create Objects texture
+                this.objectsTexture = gl.createTexture();
+                gl.activeTexture(gl.TEXTURE0 + this.uniforms.uObjects.value());
+                gl.bindTexture(gl.TEXTURE_2D, this.objectsTexture);
+
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.pathTracer.bvh.objects.length, this.pathTracer.bvh.objFields,
+                    0, gl.RGBA, gl.FLOAT, this.pathTracer.bvh.objData);
 
                 /* Set up vertex position buffer */
                 this.vertexPositionBuffer = gl.createBuffer();

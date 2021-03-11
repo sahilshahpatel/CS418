@@ -58,6 +58,10 @@ struct BoundingBox{
 };
 
 struct BVHNode{
+    vec4[2] data;
+};
+
+struct Object{
     vec3[3] shape;
     float type;
     float material;
@@ -72,6 +76,7 @@ vec3 reflect(vec3 v, vec3 n);
 vec3 refract(vec3 v, vec3 n, float eta_ratio);
 float schlick(float cos_theta, float eta_ratio);
 BVHNode getBVHNode(int i);
+Object getObject(int i);
 float random(vec2 co);
 float random();
 vec3 randomPointOnUnitSphere();
@@ -84,13 +89,14 @@ bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin
 HitRec sceneIntersection(Ray ray, float tmin, float tmax);
 
 HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax);
-bool BVHNodeIntersection(BVHNode node, Ray ray, float tmin, float tmax);
+bool boundingBoxIntersection(BoundingBox box, Ray ray, float tmin, float tmax);
+bool objectIntersection(inout HitRec result, float idx, Ray ray, float tmin, float tmax);
 
 /* Scattering Functions */
 Ray lambertianScatter(Ray ray, vec3 p, vec3 n);
 Ray metalScatter(Ray ray, vec3 p, vec3 n, float fuzz);
 Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta);
-void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n);
+void setMaterial(out HitRec hit, Object obj, Ray ray, vec3 p, vec3 n);
 
 /* Path Tracer Functions */
 vec3 getColor(Ray ray);
@@ -102,8 +108,11 @@ uniform int uBounceLimit;
 uniform float uSeed;
 uniform float uPreviousFrameWeight;
 uniform sampler2D uPreviousFrame;
+
 uniform sampler2D uBVH;
 uniform vec2 uBVHSize;
+uniform sampler2D uObjects;
+uniform vec2 uObjectsSize;
 
 in vec2 fragUV;
 out vec4 fragmentColor;
@@ -189,9 +198,10 @@ HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
         int n = stack[stackp];
         BVHNode node = getBVHNode(n);
 
-        CASE(node.type, 0){
+        if(node.data[0].x < 0.0){
             // BVH Node is internal, check self and recurse
-            if(!BVHNodeIntersection(node, ray, tmin, tmax)){
+            BoundingBox box = BoundingBox(node.data[0].yzw, node.data[1].yzw);
+            if(!boundingBoxIntersection(box, ray, tmin, tmax)){
                 // Ray misses this box, so we can ignore it
                 stackp = stackp - 1; // pop
                 continue;
@@ -206,27 +216,15 @@ HitRec sceneIntersectionBVH(Ray ray, float tmin, float tmax){
             continue;
         }
 
-        // BVHNode is a leaf (intersectible), so check for intersection
-        Intersection current;
-        bool contact = false;
-        CASE(node.type, 1){
-            Sphere s = Sphere(node.shape[0], node.shape[1].x);
-            contact = sphereIntersection(current, s, ray, tmin, result.intersect.t);
-        }
-        else CASE(node.type, 2){
-            Plane pl = Plane(node.shape[0], node.shape[1]);
-            contact = planeIntersection(current, pl, ray, tmin, result.intersect.t);
-        }
-        else CASE(node.type, 3){
-            Triangle tri = Triangle(node.shape[0], node.shape[1], node.shape[2]);
-            contact = triangleIntersection(current, tri, ray, tmin, result.intersect.t);
-        }
-
-        // Update result if we hit successfully
-        if(contact){
-            result.intersect = current;
-            setMaterial(result, node, ray, current.p, current.n);
-        }
+        // BVHNode is object collection, check for intersections
+        objectIntersection(result, node.data[0].x, ray, tmin, tmax);
+        objectIntersection(result, node.data[0].y, ray, tmin, tmax);
+        objectIntersection(result, node.data[0].z, ray, tmin, tmax);
+        objectIntersection(result, node.data[0].w, ray, tmin, tmax);
+        objectIntersection(result, node.data[1].x, ray, tmin, tmax);
+        objectIntersection(result, node.data[1].y, ray, tmin, tmax);
+        objectIntersection(result, node.data[1].z, ray, tmin, tmax);
+        objectIntersection(result, node.data[1].w, ray, tmin, tmax);
         
         // This node has been handled, we can pop now
         stackp = stackp - 1;
@@ -315,11 +313,36 @@ bool triangleIntersection(out Intersection it, Triangle tri, Ray ray, float tmin
     return true;
 }
 
-bool BVHNodeIntersection(BVHNode node, Ray ray, float tmin, float tmax){
-    BoundingBox box;
-    box.start = node.shape[0].xyz;
-    box.end = node.shape[1].xyz;
-    
+bool objectIntersection(inout HitRec result, float idx, Ray ray, float tmin, float tmax){
+    if(idx < 0.0) return false;
+
+    Object obj = getObject(int(idx));
+
+    Intersection current;
+    bool contact = false;
+    CASE(obj.type, 1){
+        Sphere s = Sphere(obj.shape[0], obj.shape[1].x);
+        contact = sphereIntersection(current, s, ray, tmin, result.intersect.t);
+    }
+    else CASE(obj.type, 2){
+        Plane pl = Plane(obj.shape[0], obj.shape[1]);
+        contact = planeIntersection(current, pl, ray, tmin, result.intersect.t);
+    }
+    else CASE(obj.type, 3){
+        Triangle tri = Triangle(obj.shape[0], obj.shape[1], obj.shape[2]);
+        contact = triangleIntersection(current, tri, ray, tmin, result.intersect.t);
+    }
+
+    // Update result if we hit successfully
+    if(contact){
+        result.intersect = current;
+        setMaterial(result, obj, ray, current.p, current.n);
+    }
+
+    return contact;
+}
+
+bool boundingBoxIntersection(BoundingBox box, Ray ray, float tmin, float tmax){    
     // From https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies
     vec3 t_min = vec3(tmin);
     vec3 t_max = vec3(tmax);
@@ -399,30 +422,30 @@ Ray dielectricScatter(Ray ray, vec3 p, vec3 n, float eta){
 
 /** Sets the material of hit based on the node's material type
  */
-void setMaterial(out HitRec hit, BVHNode node, Ray ray, vec3 p, vec3 n){
+void setMaterial(out HitRec hit, Object obj, Ray ray, vec3 p, vec3 n){
     // Color is material type independent
-    CASE(node.texture, 0){
+    CASE(obj.texture, 0){
         // Solid color
-        hit.material.color = node.color;
+        hit.material.color = obj.color;
     }
-    // else CASE(node.texture, 1){
+    // else CASE(obj.texture, 1){
     //     // TODO: use texture to get color
     // }
 
-    CASE(node.material, 0){
+    CASE(obj.material, 0){
         // No material = solid color
         hit.material.scatter = Ray(vec3(0.0), vec3(0.0));
     }
-    else CASE(node.material, 1){
+    else CASE(obj.material, 1){
         hit.material.scatter = lambertianScatter(ray, p, n);
     }
-    else CASE(node.material, 2){
-        hit.material.scatter = metalScatter(ray, p, n, node.scatterData.x);
+    else CASE(obj.material, 2){
+        hit.material.scatter = metalScatter(ray, p, n, obj.scatterData.x);
     }
-    else CASE(node.material, 3){
-        hit.material.scatter = dielectricScatter(ray, p, n, node.scatterData.x);
+    else CASE(obj.material, 3){
+        hit.material.scatter = dielectricScatter(ray, p, n, obj.scatterData.x);
     }
-    else CASE(node.material, 4){
+    else CASE(obj.material, 4){
         hit.material.scatter = Ray(vec3(0.0), vec3(0.0));
         hit.material.color = 0.5*n + 0.5;                   // Special case material which modifies color
     }
@@ -452,16 +475,26 @@ float schlick(float cos_theta, float eta_ratio){
 BVHNode getBVHNode(int i){
     BVHNode node;
 
+    float tex = float(i) + 0.5;
+    node.data[0] = texture(uBVH, vec2(tex, 0.5) / uBVHSize);
+    node.data[1] = texture(uBVH, vec2(tex, 1.5) / uBVHSize);
+
+    return node;
+}
+
+Object getObject(int i){
+    Object obj;
+
     // Sample BVH texture for each vec4
     float tex = float(i) + 0.5;
-    vec4 data0 = texture(uBVH, vec2(tex, 0.5) / uBVHSize);
-    vec4 data1 = texture(uBVH, vec2(tex, 1.5) / uBVHSize);
-    vec4 data2 = texture(uBVH, vec2(tex, 2.5) / uBVHSize);
-    vec4 data3 = texture(uBVH, vec2(tex, 3.5) / uBVHSize);
-    vec4 data4 = texture(uBVH, vec2(tex, 4.5) / uBVHSize);
+    vec4 data0 = texture(uObjects, vec2(tex, 0.5) / uObjectsSize);
+    vec4 data1 = texture(uObjects, vec2(tex, 1.5) / uObjectsSize);
+    vec4 data2 = texture(uObjects, vec2(tex, 2.5) / uObjectsSize);
+    vec4 data3 = texture(uObjects, vec2(tex, 3.5) / uObjectsSize);
+    vec4 data4 = texture(uObjects, vec2(tex, 4.5) / uObjectsSize);
 
-    /* BVHNode comes in as vec4[5]
-    * [0].w                    => node type (0 = internal)
+    /* Object comes in as vec4[5]
+    * [0].w                    => shape type
     * [1].w                    => material type
     * [2].w                    => texture number (0 = solid color)
     * [0:2].xyz                => shape data
@@ -471,19 +504,19 @@ BVHNode getBVHNode(int i){
     */
 
     // Fill in node struct
-    node.type           = data0.w;
-    node.material       = data1.w;
-    node.texture        = data2.w;
-    node.shape[0]       = data0.xyz;
-    node.shape[1]       = data1.xyz;
-    node.shape[2]       = data2.xyz;
-    node.texCo[0]       = data3.xy;
-    node.texCo[1]       = data3.zw;
-    node.texCo[2]       = data4.xy;
-    node.color          = data3.xyz;
-    node.scatterData    = data4.zw;
+    obj.type           = data0.w;
+    obj.material       = data1.w;
+    obj.texture        = data2.w;
+    obj.shape[0]       = data0.xyz;
+    obj.shape[1]       = data1.xyz;
+    obj.shape[2]       = data2.xyz;
+    obj.texCo[0]       = data3.xy;
+    obj.texCo[1]       = data3.zw;
+    obj.texCo[2]       = data4.xy;
+    obj.color          = data3.xyz;
+    obj.scatterData    = data4.zw;
 
-    return node;
+    return obj;
 }
 
 vec3 randomPointOnUnitSphere(){
