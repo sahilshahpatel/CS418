@@ -5,11 +5,13 @@ class BVH{
         this.groupSize = 8;
 
         // Array-representation of the BVH tree
-        this.nodes = objects.length <= this.groupSize ? 1 : Math.pow(2, Math.ceil(Math.log2(objects.length / this.groupSize)) + 1);
+        this.depth = Math.ceil(Math.log2(this.objects.length / this.groupSize));
+        this.nodes = 2*Math.pow(2, this.depth) - 1;
         this.fieldLength = 4; // Vec4s
         this.treeFields = 2;
         this.treeData = Float32Array.from({length: this.nodes * this.fieldLength * this.treeFields}, () => -1);
         
+        // Texture for object data
         this.objFields = 5;
         this.objData = []; // objects.length x objFields texture
         for(let i = 0; i < this.objFields; i++){

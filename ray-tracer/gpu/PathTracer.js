@@ -50,8 +50,8 @@ class PathTracer{
                     #define INFINITY ${this.infinity.toFixed(1)}
                     #define EPSILON ${this.epsilon}
                     #define PI 3.141592
-                    #define MAX_BVH_STACK 100 // TODO: set this 'dynamically' based on BVH depth
-                    // #define USE_BVH
+                    #define MAX_BVH_STACK ${(this.bvh.depth + 1).toFixed(0)}
+                    #define USE_BVH
 
                     #define SCENE_INTERSECTIONS ${sceneIntersections}
 
