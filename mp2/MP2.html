@@ -59,7 +59,7 @@ void main(void) {
     vec3 water = vec3(0.0, 0.0, 0.8);
     vec3 sand = vec3(0.6, 0.6, 0.4);
     vec3 grass = vec3(0.2, 1.0, 0.0) * 0.5;
-    vec3 dirt = vec3(0.25, 0.25, 0.0);
+    vec3 dirt = vec3(0.1, 0.1, 0.0);
 
     float waterline = 0.25;
     float shoreline = 0.4;
@@ -128,6 +128,8 @@ void main(void) {
     fragmentColor = vec4((  kAmbient * ambientLightColor
                         + kDiffuse * diffuseLightColor * diffuseWeight
                         + kSpecular * specularLightColor * specularWeight), 1.0);
+
+    fragmentColor = vec4(0.5 * vertexNormalView.xyz + 0.5, 1.0);
 }
 </script>
 

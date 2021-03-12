@@ -106,9 +106,9 @@ class Terrain {
         }
 
         /* Set up faces */
-        for(let i = 0; i < this.div; i++){
-            for(let j = 0; j < this.div; j++){
-                let bottomLeft = i*(this.div+1) + j;
+        for(let y = 0; y < this.div; y++){
+            for(let x = 0; x < this.div; x++){
+                let bottomLeft = y*(this.div+1) + x;
                 let bottomRight = bottomLeft + 1;
                 let topLeft = bottomLeft + this.div + 1;
                 let topRight = topLeft + 1;
@@ -205,11 +205,11 @@ class Terrain {
             this.getVertex(v2, this.faceData[f+1]);
             this.getVertex(v3, this.faceData[f+2]);
 
-            glMatrix.vec3.sub(v1, v2, v1);
-            glMatrix.vec3.sub(v2, v3, v2);
+            glMatrix.vec3.sub(v2, v2, v1);
+            glMatrix.vec3.sub(v3, v3, v1);
 
             let n = glMatrix.vec3.create();
-            glMatrix.vec3.cross(n, v1, v2);
+            glMatrix.vec3.cross(n, v2, v3);
 
             // TODO: I don't quite understand the difference between
             //  triangle and parallelogram area weighting since this
@@ -218,12 +218,13 @@ class Terrain {
             
             fnormals.push(n);
         }
-        
+
         // Interpolate normals for each vertex
+        let getUpperRight = (x, y) => 2*(y*(this.div) + x);
         for(let y = 0; y <= this.div; y++){
-            for(let x = 0; x <= this.div; x++){                
-                let v = 2*(y*(this.div+1) + x); // Index of upper right face
-                let v_b = v - 2*this.div; // Index of bottom right-left face
+            for(let x = 0; x <= this.div; x++){
+                let v = getUpperRight(x, y); // Index of upper right face
+                let v_b = getUpperRight(x, y-1); // Index of bottom right-left face
 
                 let faces = [];
 
@@ -255,9 +256,7 @@ class Terrain {
                 }
                 glMatrix.vec3.normalize(n, n);
 
-                this.normalData.push(n[0]);
-                this.normalData.push(n[1]);
-                this.normalData.push(n[2]);
+                this.normalData.push(...n);
             }
         }
     }
