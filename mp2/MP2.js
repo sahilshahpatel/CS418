@@ -40,11 +40,11 @@ var shininess = 10;
 /** @global Light position in VIEW coordinates */
 var lightPosition = [0, 10, -4];
 /** @global Ambient light color/intensity for Phong reflection */
-var ambientLightColor = [0.1, 0.1, 0.1];
+var ambientLightColor = [0.25, 0.25, 0.25];
 /** @global Diffuse light color/intensity for Phong reflection */
 var diffuseLightColor = [1, 1, 1];
 /** @global Specular light color/intensity for Phong reflection */
-var specularLightColor = [1, 1, 1];
+var specularLightColor = [.25, .25, .25];
 
 /** @global Edge color for black wireframe */
 var kEdgeBlack = [0.0, 0.0, 0.0];
@@ -210,7 +210,7 @@ function draw(time) {
   
   // eyePt rotates around the terrain over time
   const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
-  const theta = time * 0.0002; //-Math.PI/2;
+  const theta = time * 0.0002;
   const radius = 2;
   const eyePt = glMatrix.vec3.fromValues(radius * Math.cos(theta), radius * Math.sin(theta), 0.75);
   glMatrix.vec3.add(eyePt, eyePt, lookAtPt);

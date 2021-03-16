@@ -29,7 +29,6 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
-out vec4 vertexColor;
 out vec3 vertexNormalView;
 out vec3 vertexPositionView;
 out vec3 kAmbient;
@@ -128,8 +127,6 @@ void main(void) {
     fragmentColor = vec4((  kAmbient * ambientLightColor
                         + kDiffuse * diffuseLightColor * diffuseWeight
                         + kSpecular * specularLightColor * specularWeight), 1.0);
-
-    fragmentColor = vec4(0.5 * vertexNormalView.xyz + 0.5, 1.0);
 }
 </script>
 

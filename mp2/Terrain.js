@@ -220,45 +220,55 @@ class Terrain {
         }
 
         // Interpolate normals for each vertex
-        let getUpperRight = (x, y) => 2*(y*(this.div) + x);
         for(let y = 0; y <= this.div; y++){
             for(let x = 0; x <= this.div; x++){
-                let v = getUpperRight(x, y); // Index of upper right face
-                let v_b = getUpperRight(x, y-1); // Index of bottom right-left face
-
-                let faces = [];
-
-                // Upper right
-                if(x < this.div && y < this.div){
-                    faces.push(v);
-                }
-
-                // Upper left
-                if(x > 0 && y < this.div) {
-                    faces.push(v-1);
-                    faces.push(v-2);
-                }
-
-                // Bottom right
-                if(x < this.div && y > 0){
-                    faces.push(v_b + 1);
-                    faces.push(v_b);
-                }
-
-                // Bottom left
-                if(x > 0 && y > 0){
-                    faces.push(v_b - 1);
-                }
+                let faces = this.getNeighboringFaces(x, y);
 
                 let n = glMatrix.vec3.create();
-                for(let f in faces){
-                    glMatrix.vec3.add(n, n, fnormals[f]);
-                }
+                faces.forEach((f) => glMatrix.vec3.add(n, n, fnormals[f]));
                 glMatrix.vec3.normalize(n, n);
 
-                this.normalData.push(...n);
+                this.normalData.push(...n)
             }
         }
+    }
+
+    /**
+     * Finds all neighboring faces of the given vertex
+     * @param {int} x 
+     * @param {int} y 
+     * @returns a list of the indicies of all neighboring faces to this vertex
+     */
+    getNeighboringFaces(x, y){
+        let getUpperRight = (x, y) => 2*(y*(this.div) + x);
+        let v = getUpperRight(x, y); // Index of upper right face
+        let v_b = getUpperRight(x, y-1); // Index of bottom right-left face
+
+        let faces = [];
+
+        // Upper right
+        if(x < this.div && y < this.div){
+            faces.push(v);
+        }
+
+        // Upper left
+        if(x > 0 && y < this.div) {
+            faces.push(v-1);
+            faces.push(v-2);
+        }
+
+        // Bottom right
+        if(x < this.div && y > 0){
+            faces.push(v_b + 1);
+            faces.push(v_b);
+        }
+
+        // Bottom left
+        if(x > 0 && y > 0){
+            faces.push(v_b - 1);
+        }
+
+        return faces;
     }
 
 
