@@ -1,7 +1,7 @@
 /**
- * @file MP2.js - A simple WebGL rendering engine
- * @author Ian Rudnick <itr2@illinois.edu>
- * @brief Starter code for CS 418 MP2 at the University of Illinois at
+ * @file mp3.js - A simple WebGL rendering engine
+ * @author Sahil Patel <sahilsp2@illinois.edu>
+ * @brief Starter code for CS 418 MP3 at the University of Illinois at
  * Urbana-Champaign.
  * 
  * Updated Spring 2021 for WebGL 2.0/GLSL 3.00 ES.
@@ -19,6 +19,9 @@ var shaderProgram;
 /** @global An object holding the geometry for your 3D terrain */
 var myTerrain;
 
+/** @global An object which handles user input */
+var controller;
+
 /** @global The Model matrix */
 var modelViewMatrix = glMatrix.mat4.create();
 /** @global The Projection matrix */
@@ -34,13 +37,13 @@ var normalMatrix = glMatrix.mat3.create();
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [227/255, 191/255, 76/255];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 10;
+var shininess = 1;
 
 // Light parameters
 /** @global Light position in VIEW coordinates */
-var lightPosition = [0, 10, -4];
+var lightPosition = [0, 0, 0];
 /** @global Ambient light color/intensity for Phong reflection */
-var ambientLightColor = [0.25, 0.25, 0.25];
+var ambientLightColor = [1, 1, 1];
 /** @global Diffuse light color/intensity for Phong reflection */
 var diffuseLightColor = [1, 1, 1];
 /** @global Specular light color/intensity for Phong reflection */
@@ -75,8 +78,13 @@ function startup() {
   setupShaders();
 
   // Let the Terrain object set up its own buffers.
-  myTerrain = new Terrain(64, -1, 1, -1, 1);
+  const SIZE = 1
+  const DETAIL = 64
+  myTerrain = new Terrain(DETAIL, -SIZE, SIZE, -SIZE, SIZE);
   myTerrain.setupBuffers(shaderProgram);
+
+  // Set up the controller
+  controller = new Controller(glMatrix.vec3.fromValues(-1, 0, myTerrain.maxZ));
 
   // Set the background color to sky blue (you can change this if you like).
   gl.clearColor(0.82, 0.93, 0.99, 1.0);
@@ -209,14 +217,16 @@ function draw(time) {
                             near, far);
   
   // eyePt rotates around the terrain over time
-  const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
-  const theta = time * 0.0002;
-  const radius = 2;
-  const eyePt = glMatrix.vec3.fromValues(radius * Math.cos(theta), radius * Math.sin(theta), 0.75);
-  glMatrix.vec3.add(eyePt, eyePt, lookAtPt);
-  const up = glMatrix.vec3.fromValues(0, 0, 1);
+  // const lookAtPt = glMatrix.vec3.fromValues(0.0, 0.0, 0.0);
+  // const theta = 0.5 * time;
+  // const radius = 2;
+  // const eyePt = glMatrix.vec3.fromValues(radius * Math.cos(theta), radius * Math.sin(theta), 0.75);
+  // glMatrix.vec3.add(eyePt, eyePt, lookAtPt);
+  // const up = glMatrix.vec3.fromValues(0, 0, 1);
+  // glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
 
-  glMatrix.mat4.lookAt(modelViewMatrix, eyePt, lookAtPt, up);
+  // ModelViewMatrix is determined by controller
+  glMatrix.mat4.lookAt(modelViewMatrix, controller.pos, controller.lookAt, controller.up);
 
   gl.uniform2f(shaderProgram.locations.heightRange, myTerrain.minZ, myTerrain.maxZ);
   setMatrixUniforms();
@@ -293,13 +303,25 @@ function setLightUniforms(a, d, s, loc) {
   gl.uniform3fv(shaderProgram.locations.lightPosition, loc);
 }
 
+
+/** @global The last time animate was called */
+var previousTime = 0;
+
 /**
  * Animates...allows user to change the geometry view between
  * wireframe, polgon, or both.
  */
- function animate(currentTime) {
+function animate(currentTime) {
+  currentTime /= 1000; // Translate to seconds
+
+  // Update position and orientation
+  controller.update(currentTime - previousTime);
+
   // Draw the frame.
   draw(currentTime);
+
+  previousTime = currentTime;
+
   // Animate the next frame. 
   requestAnimationFrame(animate);
 }
