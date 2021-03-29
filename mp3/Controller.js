@@ -14,10 +14,11 @@ class Controller {
     }
     
     /* Parameters */
-    static get SPEED_DELTA()        { return 0.1; }
+    static get SPEED_DELTA()        { return 0.05; }
     static get ROLL_DELTA()         { return 5 * 2 * Math.PI; }
     static get PITCH_DELTA()        { return 5 * 2 * Math.PI; }
-    static get INIT_SPEED()         { return 0.1; }
+    static get LIFT_TILT()          { return 0.5; }
+    static get INIT_SPEED()         { return 0.075; }
     static get INIT_DIR()           { return glMatrix.vec3.fromValues(1, 0, 0); }
     static get INIT_UP()            { return glMatrix.vec3.fromValues(0, 0, 1); }
 
@@ -26,16 +27,16 @@ class Controller {
     static get KEY_SLOW_DOWN()      { return "-"; }
     static get KEY_ROLL_RIGHT()     { return "d"; }
     static get KEY_ROLL_LEFT()      { return "a"; }
-    static get KEY_PITCH_UP()       { return "w"; }
-    static get KEY_PITCH_DOWN()     { return "s"; }
+    static get KEY_PITCH_UP()       { return "s"; }
+    static get KEY_PITCH_DOWN()     { return "w"; }
     static get KEY_RESET()          { return "Escape"; }
 
     /* Getters */
-    get dir() {
-        let dir = Controller.INIT_DIR;
-        glMatrix.vec3.transformQuat(dir, dir, this.orientation);
-        glMatrix.vec3.normalize(dir, dir);
-        return dir;
+    get forward() {
+        let forward = Controller.INIT_DIR;
+        glMatrix.vec3.transformQuat(forward, forward, this.orientation);
+        glMatrix.vec3.normalize(forward, forward);
+        return forward;
     }
 
     get up() {
@@ -45,9 +46,15 @@ class Controller {
         return up;
     }
 
+    get right() {
+        let right = glMatrix.vec3.create();
+        glMatrix.vec3.cross(right, this.forward, this.up);
+        return right;
+    }
+
     get lookAt() {
         let lookAt = glMatrix.vec3.create();
-        glMatrix.vec3.add(lookAt, this.dir, this.pos);
+        glMatrix.vec3.add(lookAt, this.forward, this.pos);
         return lookAt;
     }
 
@@ -88,22 +95,31 @@ class Controller {
         }
 
         if(this.keys[Controller.KEY_PITCH_UP]){
-            eulerY += Controller.PITCH_DELTA * deltaT;
-        }
-
-        if(this.keys[Controller.KEY_PITCH_DOWN]){
             eulerY -= Controller.PITCH_DELTA * deltaT;
         }
 
+        if(this.keys[Controller.KEY_PITCH_DOWN]){
+            eulerY += Controller.PITCH_DELTA * deltaT;
+        }
+
         /* Update orientation */
+        // TODO: Don't let the user roll > 90 degrees
         let orientationDelta = glMatrix.quat.create();
         glMatrix.quat.fromEuler(orientationDelta, eulerX, eulerY, eulerZ);
-        
         glMatrix.quat.multiply(this.orientation, this.orientation, orientationDelta);
+
+        /* Naively simulate turning via rolling */
+        let tiltQuat = glMatrix.quat.create();
+        let up = this.up; // Avoid recalculating
+        // Uses vec2 to ignore Z component
+        let sign = -Math.sign(glMatrix.vec2.dot(up, this.right));
+        let tilt = sign * Controller.LIFT_TILT * glMatrix.vec2.length(up);
+        glMatrix.quat.fromEuler(tiltQuat, 0, 0, tilt);
+        glMatrix.quat.multiply(this.orientation, tiltQuat, this.orientation, tiltQuat);
 
         /* Update position */
         let posDelta = glMatrix.vec3.create();
-        glMatrix.vec3.scale(posDelta, this.dir, this.speed * deltaT);
+        glMatrix.vec3.scale(posDelta, this.forward, this.speed * deltaT);
         glMatrix.vec3.add(this.pos, this.pos, posDelta);
     }
 
