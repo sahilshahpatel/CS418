@@ -54,6 +54,9 @@ var kEdgeBlack = [0.0, 0.0, 0.0];
 /** @global Edge color for white wireframe */
 var kEdgeWhite = [0.7, 0.7, 0.7];
 
+/** @global Fog Color */
+var fogColor = [0.9, 0.9, 0.95];
+
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -87,7 +90,8 @@ function startup() {
   controller = new Controller(glMatrix.vec3.fromValues(-1, 0, myTerrain.maxZ));
 
   // Set the background color to sky blue (you can change this if you like).
-  gl.clearColor(0.82, 0.93, 0.99, 1.0);
+  // gl.clearColor(0.82, 0.93, 0.99, 1.0);
+  gl.clearColor(...fogColor, 1);
 
   gl.enable(gl.DEPTH_TEST);
   requestAnimationFrame(animate);
@@ -184,6 +188,8 @@ function setupShaders() {
 
   shaderProgram.locations.heightRange = 
     gl.getUniformLocation(shaderProgram, "heightRange");
+  shaderProgram.locations.fogColor = 
+    gl.getUniformLocation(shaderProgram, "fogColor");
 
   shaderProgram.locations.kSpecular =
     gl.getUniformLocation(shaderProgram, "kSpecular");
@@ -229,6 +235,7 @@ function draw(time) {
   glMatrix.mat4.lookAt(modelViewMatrix, controller.pos, controller.lookAt, controller.up);
 
   gl.uniform2f(shaderProgram.locations.heightRange, myTerrain.minZ, myTerrain.maxZ);
+  gl.uniform3fv(shaderProgram.locations.fogColor, fogColor);
   setMatrixUniforms();
   setLightUniforms(ambientLightColor, diffuseLightColor, specularLightColor,
                    lightPosition);

@@ -95,6 +95,8 @@ uniform vec3 ambientLightColor;
 uniform vec3 diffuseLightColor;
 uniform vec3 specularLightColor;
 
+uniform vec3 fogColor;
+
 in vec3 vertexPositionView;
 in vec3 vertexNormalView;
 in float height;
@@ -123,6 +125,13 @@ void main(void) {
     fragmentColor = vec4((  kAmbient * ambientLightColor
                         + kDiffuse * diffuseLightColor * diffuseWeight
                         + kSpecular * specularLightColor * specularWeight), 1.0);
+
+
+    // Add fog based on fragment depth
+    float density = 0.75;
+    float depth = 0.5 - 0.5 * vertexPositionView.z;
+    float fog = exp(-density * depth);
+    fragmentColor = mix(vec4(fogColor, 1.0), fragmentColor, fog); 
 }
 </script>
 
