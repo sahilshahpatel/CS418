@@ -96,6 +96,7 @@ uniform vec3 diffuseLightColor;
 uniform vec3 specularLightColor;
 
 uniform vec3 fogColor;
+uniform float fogDensity;
 
 in vec3 vertexPositionView;
 in vec3 vertexNormalView;
@@ -128,9 +129,8 @@ void main(void) {
 
 
     // Add fog based on fragment depth
-    float density = 0.75;
     float depth = 0.5 - 0.5 * vertexPositionView.z;
-    float fog = exp(-density * depth);
+    float fog = exp(-fogDensity * depth);
     fragmentColor = mix(vec4(fogColor, 1.0), fragmentColor, fog); 
 }
 </script>
@@ -146,6 +146,7 @@ void main(void) {
                 <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
                 <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
                 <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
+                <input type="checkbox" id="fog" checked> Enable Fog
             </div>
         </fieldset>
     </form>

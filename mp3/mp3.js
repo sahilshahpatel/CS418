@@ -56,6 +56,8 @@ var kEdgeWhite = [0.7, 0.7, 0.7];
 
 /** @global Fog Color */
 var fogColor = [0.9, 0.9, 0.95];
+/** @global Fog Density */
+var fogDensity = 0.5;
 
 /**
  * Translates degrees to radians
@@ -82,12 +84,12 @@ function startup() {
 
   // Let the Terrain object set up its own buffers.
   const SIZE = 1
-  const DETAIL = 64
+  const DETAIL = 100
   myTerrain = new Terrain(DETAIL, -SIZE, SIZE, -SIZE, SIZE);
   myTerrain.setupBuffers(shaderProgram);
 
   // Set up the controller
-  controller = new Controller(glMatrix.vec3.fromValues(-1, 0, myTerrain.maxZ));
+  controller = new Controller(glMatrix.vec3.fromValues(-SIZE, 0, myTerrain.maxZ));
 
   // Set the background color to sky blue (you can change this if you like).
   // gl.clearColor(0.82, 0.93, 0.99, 1.0);
@@ -188,6 +190,9 @@ function setupShaders() {
 
   shaderProgram.locations.heightRange = 
     gl.getUniformLocation(shaderProgram, "heightRange");
+
+  shaderProgram.locations.fogDensity = 
+    gl.getUniformLocation(shaderProgram, "fogDensity");
   shaderProgram.locations.fogColor = 
     gl.getUniformLocation(shaderProgram, "fogColor");
 
@@ -235,7 +240,10 @@ function draw(time) {
   glMatrix.mat4.lookAt(modelViewMatrix, controller.pos, controller.lookAt, controller.up);
 
   gl.uniform2f(shaderProgram.locations.heightRange, myTerrain.minZ, myTerrain.maxZ);
+  
   gl.uniform3fv(shaderProgram.locations.fogColor, fogColor);
+  gl.uniform1f(shaderProgram.locations.fogDensity, document.getElementById("fog").checked ? fogDensity : 0);
+  
   setMatrixUniforms();
   setLightUniforms(ambientLightColor, diffuseLightColor, specularLightColor,
                    lightPosition);
