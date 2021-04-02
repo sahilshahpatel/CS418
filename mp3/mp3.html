@@ -146,7 +146,15 @@ void main(void) {
                 <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
                 <input type="radio" name="primitive" id="polygon" value="polygon" checked> Polygon
                 <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges
+            </div>
+            <div>
                 <input type="checkbox" id="fog" checked> Enable Fog
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>Controller Options</legend>
+            <div>
+                <input type="checkbox" id="lift-sim" checked> Simulate Lift
             </div>
         </fieldset>
     </form>
@@ -162,8 +170,12 @@ void main(void) {
 
         <h3>Notes</h3>
         <ul>
-            <li>Simulates turning-by-rolling for a more accurate flight feel. This means that rolling left/right will cause you to fly in a circle.</li>
-            <li>Rolling more than 90 degrees will cause this naive simulation to break, turning you the opposite direction. For this reason, rolling has been limited to 45 degrees.</li>
+            <li>Enabling "Simulate Lift" creates a more accurate flight feel. This means that rolling left/right will cause you to fly in a circle.</li>
+            <li>
+                The naive simulation can still break with extreme turn angles. In this mode rolling is limited to 45 degrees, but extreme pitching 
+                (i.e. turning upside-down) can also cause you to suddenly spin in the opposite direction. If you are encountering consistent issues, 
+                you can turn off the option.
+            </li>
         </ul>
     </div>
 </body>

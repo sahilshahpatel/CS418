@@ -19,6 +19,8 @@ class Controller {
     static get PITCH_DELTA()        { return 5 * 2 * Math.PI; }
     static get LIFT_TILT()          { return 0.5; }
     static get INIT_SPEED()         { return 0.075; }
+    static get MAX_SPEED()          { return Infinity; }
+    static get MIN_SPEED()          { return 0; }
     static get INIT_DIR()           { return glMatrix.vec3.fromValues(1, 0, 0); }
     static get INIT_UP()            { return glMatrix.vec3.fromValues(0, 0, 1); }
     static get MAX_ROLL()           { return 2 * Math.PI / 8; } // Should always be less than a quarter turn
@@ -87,6 +89,10 @@ class Controller {
             this.speed -= Controller.SPEED_DELTA * deltaT;
         }
 
+        // Constrain speed
+        if(this.speed > Controller.MAX_SPEED) this.speed = Controller.MAX_SPEED;
+        if(this.speed < Controller.MIN_SPEED) this.speed = Controller.MIN_SPEED;
+
         if(this.keys[Controller.KEY_ROLL_RIGHT]){
             roll += Controller.ROLL_DELTA * deltaT;
         }
@@ -111,24 +117,29 @@ class Controller {
         }
         getNextOrientation();
 
-        let up = this.up; // Avoid recalculating
-        let nextRoll = Math.sign(roll) * Math.acos(glMatrix.vec3.dot(up, glMatrix.vec3.fromValues(0, 0, 1)));
-        if(Math.abs(nextRoll) < Controller.MAX_ROLL){
-            this.orientation = nextOrientation;
+        if(document.getElementById("lift-sim").checked === true){
+            let up = this.up; // Avoid recalculating
+            let nextRoll = Math.sign(roll) * Math.acos(glMatrix.vec3.dot(up, glMatrix.vec3.fromValues(0, 0, 1)));
+            if(Math.abs(nextRoll) < Controller.MAX_ROLL){
+                this.orientation = nextOrientation;
+            }
+            else{
+                roll = roll - (nextRoll - Math.sign(nextRoll) * Controller.MAX_ROLL);
+                getNextOrientation();
+                this.orientation = nextOrientation;  
+            }
+    
+            /* Naively simulate turning via rolling */
+            let tiltQuat = glMatrix.quat.create();
+            // Uses vec2 to ignore Z component
+            let sign = -Math.sign(glMatrix.vec2.dot(up, this.right));
+            let tilt = sign * Controller.LIFT_TILT * glMatrix.vec2.length(up);
+            glMatrix.quat.fromEuler(tiltQuat, 0, 0, tilt);
+            glMatrix.quat.multiply(this.orientation, tiltQuat, this.orientation);
         }
         else{
-            roll = roll - (nextRoll - Math.sign(nextRoll) * Controller.MAX_ROLL);
-            getNextOrientation();
-            this.orientation = nextOrientation;  
+            this.orientation = nextOrientation;
         }
-
-        /* Naively simulate turning via rolling */
-        let tiltQuat = glMatrix.quat.create();
-        // Uses vec2 to ignore Z component
-        let sign = -Math.sign(glMatrix.vec2.dot(up, this.right));
-        let tilt = sign * Controller.LIFT_TILT * glMatrix.vec2.length(up);
-        glMatrix.quat.fromEuler(tiltQuat, 0, 0, tilt);
-        glMatrix.quat.multiply(this.orientation, tiltQuat, this.orientation);
 
         /* Update position */
         let posDelta = glMatrix.vec3.create();
