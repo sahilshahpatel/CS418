@@ -58,10 +58,10 @@ class TriMesh{
     * @param {Object} an array object of length 3 to fill win max XYZ coords
     */
     getAABB(minXYZ,maxXYZ){
-       for(var j=0;j<3;j++){    
-                minXYZ[0+j]= this.minXYZ[0+j];
-                maxXYZ[0+j]= this.maxXYZ[0+j];  
-             }     
+        for(var j=0; j<3; j++){    
+            minXYZ[0+j]= this.minXYZ[0+j];
+            maxXYZ[0+j]= this.maxXYZ[0+j];  
+        }     
     }
     
    /**
@@ -101,7 +101,20 @@ class TriMesh{
     loadFromOBJ(fileText)
     {    
         //Your code here
-        
+        fileText.split('\n').forEach(line => {
+            let args = line.split(/\b\s+(?!$)/); // Split by whitespace
+            switch(args[0]){
+                case 'v':
+                    let v = args.splice(1, 3).map(arg => parseFloat(arg));
+                    this.vBuffer.push(...v);
+                    break;
+                case 'f':
+                    // OBJ faces are 1-indexed; translate to 0-indexing
+                    let f = args.splice(1, 3).map(i => parseInt(i) - 1);
+                    this.fBuffer.push(...f);
+                    break;
+            }
+        });
         
         this.numVertices = this.vBuffer.length / 3;
         this.numFaces = this.fBuffer.length / 3;  
@@ -340,8 +353,22 @@ class TriMesh{
     * S scales uniformly by 1/L where L is the longest side of the AABB
     */    
     canonicalTransform(){
-      //Your code here
-     
+        // Transform to center
+        let c = glMatrix.vec3.create();
+        glMatrix.vec3.add(c, this.maxXYZ, this.minXYZ);
+        glMatrix.vec3.scale(c, c, -0.5);
+        let t = glMatrix.mat4.create();
+        glMatrix.mat4.fromTranslation(t, c);
+
+        // Scale to fit
+        let diag = glMatrix.vec3.create();
+        glMatrix.vec3.sub(diag, this.maxXYZ, this.minXYZ);
+        let l = 1/Math.max(...diag);
+        let s = glMatrix.mat4.create();
+        glMatrix.mat4.fromScaling(s, glMatrix.vec3.fromValues(l, l, l));
+
+        // M = ST
+        glMatrix.mat4.multiply(this.modelMatrix, s, t);
     }
     
     /**

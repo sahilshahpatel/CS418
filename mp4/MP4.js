@@ -85,6 +85,7 @@ function startup() {
 
   // Let the mesh object set up its own buffers.
   myMesh = new TriMesh();
+//   myMesh.readFile("triangle.obj");
   myMesh.readFile("teapot.obj");
   
   // Generate the projection matrix using perspective projection.
