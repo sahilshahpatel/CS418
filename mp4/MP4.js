@@ -61,6 +61,17 @@ var kEdgeBlack = [0.0, 0.0, 0.0];
 /** @global Edge color for white wireframe */
 var kEdgeWhite = [0.7, 0.7, 0.7];
 
+/** @global Image texture to mapped onto mesh */
+var texture;
+
+/** @global Is a mouse button pressed? */
+var isDown = false;
+/** @global Mouse coordinates */
+var x = -1;
+var y = -1;
+/** @global Accumulated rotation around Y in degrees */
+var rotY = 0;
+
 /**
  * Translates degrees to radians
  * @param {Number} degrees Degree input to function
@@ -80,13 +91,23 @@ function startup() {
   canvas = document.getElementById("glCanvas");
   gl = createGLContext(canvas);
 
+  setupControls();
+
   // Compile and link the shader program.
   setupShaders();
 
   // Let the mesh object set up its own buffers.
   myMesh = new TriMesh();
-//   myMesh.readFile("triangle.obj");
   myMesh.readFile("teapot.obj");
+
+  // Load a texture
+  loadTexture("brick.jpg");
+  // Tell WebGL we want to affect texture unit 0
+  gl.activeTexture(gl.TEXTURE0);
+  // Bind the texture to texture unit 0
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  // Tell the shader we bound the texture to texture unit 0
+  gl.uniform1i(shaderProgram.locations.uSampler, 0);  
   
   // Generate the projection matrix using perspective projection.
   const near = 0.1;
@@ -208,6 +229,9 @@ function setupShaders() {
   gl.getUniformLocation(shaderProgram, "diffuseLightColor");
   shaderProgram.locations.specularLightColor =
   gl.getUniformLocation(shaderProgram, "specularLightColor");
+
+  shaderProgram.locations.uSampler =
+    gl.getUniformLocation(shaderProgram, "uTexture");
 }
 
 /**
@@ -221,8 +245,9 @@ function draw() {
   
   // Generate the view matrix using lookat.
   glMatrix.mat4.identity(modelViewMatrix);
+  glMatrix.mat4.rotateY(modelViewMatrix,myMesh.getModelTransform(),degToRad(rotY));
   glMatrix.mat4.lookAt(viewMatrix, eyePt, lookAtPt, up);
-  glMatrix.mat4.multiply(modelViewMatrix,  viewMatrix,myMesh.getModelTransform());
+  glMatrix.mat4.multiply(modelViewMatrix, viewMatrix, modelViewMatrix);
     
       
   setMatrixUniforms();
@@ -310,4 +335,53 @@ function setLightUniforms(a, d, s, loc) {
   }
   // Animate the next frame. 
   requestAnimationFrame(animate);
+}
+
+/**
+ * Load a texture from an image.
+ */
+function loadTexture(filename){
+	// Create a texture.
+	texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+ 
+	// Fill the texture with a 1x1 blue pixel.
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+              new Uint8Array([0, 0, 255, 255]));
+ 
+	// Asynchronously load an image
+	// If image load unsuccessful, it will be a blue surface
+	var image = new Image();
+	image.src = filename;
+	image.addEventListener('load', function() {
+  		// Now that the image has loaded make copy it to the texture.
+  		gl.bindTexture(gl.TEXTURE_2D, texture);
+  		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+  		gl.generateMipmap(gl.TEXTURE_2D);
+  		console.log("loaded ", filename);
+		});
+}
+
+/**
+ * Creates mouse handler functions to rotate the object
+ */
+function setupControls(){
+    canvas.addEventListener('mousedown', e => {
+        x = e.offsetX;
+        y = e.offsetY;
+        isDown = true;
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        if(isDown){
+            rotY += e.offsetX - x;
+
+            x = e.offsetX;
+            y = e.offsetY;
+        }
+    });
+
+    canvas.addEventListener('mouseup', e => {
+        isDown = false;
+    });
 }
