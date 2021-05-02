@@ -87,6 +87,7 @@ function startup() {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
+  gl.frontFace(gl.CW); // Sphere class uses clockwise order
 
   // Spawn particles
   for(let i = 0; i < NUM_PARTICLES; i++){
