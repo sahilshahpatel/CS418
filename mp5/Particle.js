@@ -25,7 +25,7 @@ class Particle{
         // this.vel = glMatrix.vec3.fromValues(1, 1, 0);
     }
 
-    static get DEFAULT_SPEED()  { return 3; }
+    static get DEFAULT_SPEED()  { return 10; }
     static get MAX_RADIUS()     { return 0.5; }
     static get MIN_RADIUS()     { return 0.1; }
     static get DEFAULT_MASS()   { return 0.1; }
