@@ -94,19 +94,16 @@ class Particle{
             // Dampen velocity after bounce
             glMatrix.vec3.scale(this.vel, this.vel, BOUNCE_DAMPENING);
 
-            if(collision.t >= 0){
-                // Update new position after bounce
-                glMatrix.vec3.scale(deltaP, this.vel, deltaT - collision.t);
-                glMatrix.vec3.add(newPos, newPos, deltaP);
-            }
-        }
 
-        // DEBUGGING: check that position is changing
-        // deltaP = glMatrix.vec3.create();
-        // glMatrix.vec3.sub(deltaP, newPos, this.pos);
-        // if(glMatrix.vec3.length(deltaP) == 0){
-        //     debugger;
-        // }
+            // Cannot naively update position after bounce because another collision could happen in this next move
+            // We could just call update(deltaT - collision.t), but I don't want to worry about infinite recursion.
+            // For this MP, ignoring this portion of the time frame is OK.
+            // if(collision.t >= 0){
+            //     // Update new position after bounce
+            //     glMatrix.vec3.scale(deltaP, this.vel, deltaT - collision.t);
+            //     glMatrix.vec3.add(newPos, newPos, deltaP);
+            // }
+        }
 
         // Apply updates
         this.pos = newPos;
