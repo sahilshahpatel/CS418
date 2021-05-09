@@ -20,9 +20,6 @@ class Particle{
         this.d = Particle.DEFAULT_DRAG;
 
         this.active = true;
-
-        // this.pos = glMatrix.vec3.fromValues(0, 0, 0);
-        // this.vel = glMatrix.vec3.fromValues(1, 1, 0);
     }
 
     static get DEFAULT_SPEED()  { return 10; }
