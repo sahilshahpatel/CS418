@@ -45,9 +45,13 @@ const lDiffuse = [1.0, 1.0, 1.0];
 /** @global Specular  light color */
 const lSpecular = [1.0, 1.0, 1.0];
 
+/** @global Timestamp of last frame */
 var previousTime = 0;
 
+/** @global Number of initial particles */
 const NUM_PARTICLES = 10;
+
+/** @global List of all particles in simulation */
 var particles = [];
 
 /**
@@ -319,6 +323,9 @@ function setLightUniforms(a, d, s, loc) {
 }
 
 
+/**
+ * Adds EventListeners for sphere spawning controls
+ */
 function setupControls(){
   canvas.addEventListener('mousedown', e => {
     particles.push(new Particle());

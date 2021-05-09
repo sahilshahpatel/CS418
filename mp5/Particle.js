@@ -2,6 +2,9 @@ const WORLD_SIZE = 3;
 const GRAVITY = 9.8;
 const BOUNCE_DAMPENING = 0.75;
 
+/**
+ * Class representing a particle within the simulation
+ */
 class Particle{
     constructor(){
         this.r = Math.random() * (Particle.MAX_RADIUS - Particle.MIN_RADIUS) + Particle.MIN_RADIUS;
@@ -29,6 +32,11 @@ class Particle{
     static get STOP_SPEED()     { return 1; }
     static get DEFAULT_DRAG()   { return 0.5; }
 
+
+    /**
+     * Updates the particles position and velocity for the given time step
+     * @param {Number} deltaT 
+     */
     update(deltaT){
         if(!this.active){ return; }
 
