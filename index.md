@@ -16,3 +16,12 @@ In our [first MP](mp1/mp1.html) we learned about the basics of WebGL and created
 
 ### MP2
 In our [second MP](mp2/MP2.html) we learned about terrain generation. We used the faulting method and a vertex shader-based color map.
+
+### MP3
+In our [third MP](mp3/mp3.html) we created a flight simulator to tour our generated terrain. To do this we learned about methods of tracking orientation including why Gimbal lock occurs when using Euler angles and how quaternions can solve the problem.
+
+### MP4
+In our [fourth MP](mp4/MP4.html) we learned texturing with the basic example of a brick texture on the Utah teapot.
+
+### MP5
+In our [final MP](mp5/MP5.html) we implemented a basic particle simulator. In the simulator particles bounce off the walls realistically, but they do not bounce off each other. We also used instancing to speed up performance.
