@@ -5,7 +5,8 @@ class Camera{
         this.aperture = aperture;
         this.focalLength = focalLength;
         
-        this.orientation = glMatrix.quat.create();
+        this.angleX = 0;
+        this.angleY = 0;
     }
 
     get INIT_DIR() {
@@ -56,5 +57,12 @@ class Camera{
         let pos = this.dir;
         glMatrix.vec3.scale(pos, pos, -this.zoom);
         return pos;
+    }
+
+    get orientation(){
+        let orientation = glMatrix.quat.create();
+        glMatrix.quat.fromEuler(orientation, this.angleX, this.angleY, 0);
+        
+        return orientation;
     }
 }

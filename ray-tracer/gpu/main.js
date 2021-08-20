@@ -9,12 +9,13 @@ window.onload = function(){
     let focalLengthSlider = document.getElementById('focalLength');
 
     /* Create webgl context */
-    canvas = document.getElementById('canvas');
+    let canvas = document.getElementById('canvas');
     gl = createGLContext(canvas);
 
     /* Create Materials */
     let matRed = new Lambertian(glMatrix.vec3.fromValues(1, 0, 0));
     let matGreen = new Lambertian(glMatrix.vec3.fromValues(0, 1, 0));
+    let matBlue = new Lambertian(glMatrix.vec3.fromValues(0, 0, 1));
     let matGray = new Lambertian(glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
     let matGlass = new Dielectric(glMatrix.vec3.fromValues(1, 1, 1), 1.5);
     let matSteel = new Metal(glMatrix.vec3.fromValues(0.75, 0.75, 0.75), 0);
@@ -30,12 +31,12 @@ window.onload = function(){
         new Sphere(
             glMatrix.vec3.fromValues(-1, 0, -1),
             1,
-            matGreen
+            matRed
         ),
         new Sphere(
             glMatrix.vec3.fromValues(1, 0, 1),
             1,
-            matRed
+            matSteel
         ),
         new Sphere(
             glMatrix.vec3.fromValues(1, 0, -1),
@@ -45,24 +46,24 @@ window.onload = function(){
         new Sphere(
             glMatrix.vec3.fromValues(-1, 0, 1),
             1,
-            matSteel
+            matGreen
         ),
         new Sphere(
-            glMatrix.vec3.fromValues(0, 1, 0),
+            glMatrix.vec3.fromValues(0, Math.sqrt(2), 0),
             1,
             matGlass
         ),
         new Triangle(
-            glMatrix.vec3.fromValues(0, 0, 0),
-            glMatrix.vec3.fromValues(0, 5, 0),
-            glMatrix.vec3.fromValues(5, 0, 0),
+            glMatrix.vec3.fromValues(2, 0, -1),
+            glMatrix.vec3.fromValues(2, 0, +1),
+            glMatrix.vec3.fromValues(2.5, -1,  0),
             matRed
         ),
     ];
 
     /* Create camera */
     camera = new Camera(
-        7,                                      // Zoom
+        9,                                      // Zoom
         Math.PI/4,                              // FOV
         parseFloat(apertureSlider.value),       // Aperture
         7,                                      // Focal length
@@ -72,40 +73,40 @@ window.onload = function(){
     let bunnyMatrix = glMatrix.mat4.create();
     glMatrix.mat4.fromXRotation(bunnyMatrix, -Math.PI/2);
     glMatrix.mat4.scale(bunnyMatrix, bunnyMatrix, glMatrix.vec3.fromValues(0.03, 0.03, 0.03));
-    let bunny = new STLMesh('bunny.stl', bunnyMatrix, matGreen);
+    let bunny = new STLMesh('bunny.stl', bunnyMatrix, matBlue);
     bunny.init().then(() => {
+        // We actually won't use the bunny here because my GPU can only barely handle it with the current BVH
         // objects = objects.concat(bunny.triangles);
+
         let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
+
+        // Set up nice initial camera view
+        camera.angleX = -35;
+        camera.angleY = 102;
 
         /* Render object */
         renderer = new Renderer(pathTracer);
         renderer.init().then(() => renderer.start());
-
-        /* Attach mouse controls */
-        let mousedown = false;
-        let angleX = 0;
-        let angleY = 0;
-        canvas.addEventListener("mousedown", () => { mousedown = true; });
-        document.addEventListener("mouseup", () => { mousedown = false; });
-        canvas.addEventListener("mousemove", e => {
-            if(!mousedown) { return; }
-
-            let k = 1; // Rotation speed
-            angleX -= k * e.movementY;
-            angleY -= k * e.movementX;
-
-            let quat = glMatrix.quat.create();
-            glMatrix.quat.fromEuler(quat, angleX, angleY, 0);
-            camera.orientation = quat;
-
-            renderer.reset();
-        });
-
-        canvas.addEventListener("wheel", e => {
-            camera.zoom += e.deltaY * 0.01;
-            renderer.reset();
-        });
     });    
+
+    /* Attach mouse controls */
+    let mousedown = false;
+    canvas.addEventListener("mousedown", () => { mousedown = true; });
+    document.addEventListener("mouseup", () => { mousedown = false; });
+    canvas.addEventListener("mousemove", e => {
+        if(!mousedown) { return; }
+
+        let k = 1; // Rotation speed
+        camera.angleX -= k * e.movementY;
+        camera.angleY -= k * e.movementX;
+
+        renderer.reset();
+    });
+
+    canvas.addEventListener("wheel", e => {
+        camera.zoom += e.deltaY * 0.01;
+        renderer.reset();
+    });
 
     /* Attach UI Controls */
     bounceLimitSlider.addEventListener("input", () => {
