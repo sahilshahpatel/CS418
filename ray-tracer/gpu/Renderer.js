@@ -260,12 +260,12 @@ class Renderer{
         gl.bindVertexArray(null);
     }
 
-    start(){
+    start(frameCallback = null){
         this.frameTimes = [];
-        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+        this.requestAnimationFrameID = requestAnimationFrame(time => this.animate(time, frameCallback));
     }
 
-    animate(time){
+    animate(time, callback){
         // Get moving average FPS and update list
         this.frameTimes.push(time);
         this.frameTimes = this.frameTimes.slice(-50);
@@ -274,7 +274,11 @@ class Renderer{
 
         this.update(time);
         this.render();
-        this.requestAnimationFrameID = requestAnimationFrame(this.animate.bind(this));
+
+        let dt = this.frameTimes[this.frameTimes.length - 2] - time;
+        callback(time, dt);
+
+        this.requestAnimationFrameID = requestAnimationFrame(time => this.animate(time, callback));
     }
 
     stop(){

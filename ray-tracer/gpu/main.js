@@ -7,6 +7,7 @@ window.onload = function(){
     let bounceLimitSlider = document.getElementById('bounceLimit');
     let apertureSlider = document.getElementById('aperture');
     let focalLengthSlider = document.getElementById('focalLength');
+    let autoOrbitCheckbox = document.getElementById('autoOrbit');
 
     /* Create webgl context */
     let canvas = document.getElementById('canvas');
@@ -69,6 +70,32 @@ window.onload = function(){
         7,                                      // Focal length
     );
 
+
+    /* Attach mouse controls */
+    let mousedown = false;
+    let mouseupTime;
+    canvas.addEventListener("mousedown", () => { mousedown = true; });
+    document.addEventListener("mouseup", () => { 
+        if(mousedown) { mouseupTime = performance.now(); }
+        mousedown = false;
+    });
+    
+    canvas.addEventListener("mousemove", e => {
+        if(!mousedown) { return; }
+
+        let k = 1; // Rotation speed
+        camera.angleX -= k * e.movementY;
+        camera.angleY -= k * e.movementX;
+
+        renderer.reset();
+    });
+
+    canvas.addEventListener("wheel", e => {
+        camera.zoom += e.deltaY * 0.01;
+        renderer.reset();
+    });
+
+
     // Bunny mesh has +Z as up and is too big
     let bunnyMatrix = glMatrix.mat4.create();
     glMatrix.mat4.fromXRotation(bunnyMatrix, -Math.PI/2);
@@ -86,27 +113,16 @@ window.onload = function(){
 
         /* Render object */
         renderer = new Renderer(pathTracer);
-        renderer.init().then(() => renderer.start());
+        renderer.init().then(() => {
+            mouseupTime = performance.now();
+            renderer.start((time, dt) => {
+                if(!mousedown && autoOrbitCheckbox.checked && time - mouseupTime > 2000){
+                    camera.angleY -= 10e-3 * dt;
+                    renderer.reset();
+                }
+            });
+        });
     });    
-
-    /* Attach mouse controls */
-    let mousedown = false;
-    canvas.addEventListener("mousedown", () => { mousedown = true; });
-    document.addEventListener("mouseup", () => { mousedown = false; });
-    canvas.addEventListener("mousemove", e => {
-        if(!mousedown) { return; }
-
-        let k = 1; // Rotation speed
-        camera.angleX -= k * e.movementY;
-        camera.angleY -= k * e.movementX;
-
-        renderer.reset();
-    });
-
-    canvas.addEventListener("wheel", e => {
-        camera.zoom += e.deltaY * 0.01;
-        renderer.reset();
-    });
 
     /* Attach UI Controls */
     bounceLimitSlider.addEventListener("input", () => {
