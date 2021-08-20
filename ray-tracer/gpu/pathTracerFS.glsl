@@ -72,8 +72,6 @@ struct Object{
 };
 
 /* Helper Functions */
-vec3 reflect(vec3 v, vec3 n);
-vec3 refract(vec3 v, vec3 n, float eta_ratio);
 float schlick(float cos_theta, float eta_ratio);
 BVHNode getBVHNode(int i);
 Object getObject(int i);
@@ -452,19 +450,6 @@ void setMaterial(out HitRec hit, Object obj, Ray ray, vec3 p, vec3 n){
 }
 
 /* Helper functions */
-vec3 reflect(vec3 v, vec3 n){
-    return v - 2.0*dot(v, n)*n;
-}
-
-vec3 refract(vec3 v, vec3 n, float eta_ratio){
-    float cos_theta = dot(-v, n);
-
-    vec3 r_perp = eta_ratio * (n*cos_theta + v);
-    vec3 r_par = n * -sqrt(abs(1.0 - dot(r_perp, r_perp)));
-
-    return r_perp + r_par;
-}
-
 float schlick(float cos_theta, float eta_ratio){
     // Schlick's approximation for reflectance at varying angles
     float r = (1.0 - eta_ratio) / (1.0 + eta_ratio);
