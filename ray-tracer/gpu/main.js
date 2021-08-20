@@ -62,8 +62,7 @@ window.onload = function(){
 
     /* Create camera */
     camera = new Camera(
-        glMatrix.vec3.fromValues(1, 3, 7),      // Position
-        glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
+        7,                                      // Zoom
         Math.PI/4,                              // FOV
         parseFloat(apertureSlider.value),       // Aperture
         7,                                      // Focal length
@@ -91,14 +90,19 @@ window.onload = function(){
         canvas.addEventListener("mousemove", e => {
             if(!mousedown) { return; }
 
-            let k = 1; // View movement speed
+            let k = 1; // Rotation speed
             angleX -= k * e.movementY;
             angleY -= k * e.movementX;
 
             let quat = glMatrix.quat.create();
             glMatrix.quat.fromEuler(quat, angleX, angleY, 0);
             camera.orientation = quat;
-            
+
+            renderer.reset();
+        });
+
+        canvas.addEventListener("wheel", e => {
+            camera.zoom += e.deltaY * 0.01;
             renderer.reset();
         });
     });    

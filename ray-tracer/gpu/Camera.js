@@ -1,14 +1,6 @@
 class Camera{
-    constructor(pos, up, fov, aperture, focalLength){
-        this.zoom = glMatrix.vec3.length(pos);
-        
-        // this.INIT_DIR = glMatrix.vec3.create();
-        // glMatrix.vec3.normalize(this.INIT_DIR, pos);
-        // glMatrix.vec3.scale(this.INIT_DIR, this.INIT_DIR, -1);
-
-        // this.INIT_UP = glMatrix.vec3.create();
-        // glMatrix.vec3.normalize(this.INIT_UP, up);
-        
+    constructor(zoom, fov, aperture, focalLength){
+        this.zoom = zoom
         this.fov = fov;
         this.aperture = aperture;
         this.focalLength = focalLength;
