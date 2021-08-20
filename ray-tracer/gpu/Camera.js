@@ -1,44 +1,68 @@
 class Camera{
-    constructor(pos, lookAt, up, fov, aperture){
-        this.pos = glMatrix.vec3.clone(pos);
-        this.lookAt = glMatrix.vec3.clone(lookAt);
+    constructor(pos, up, fov, aperture, focalLength){
+        this.zoom = glMatrix.vec3.length(pos);
+        
+        // this.INIT_DIR = glMatrix.vec3.create();
+        // glMatrix.vec3.normalize(this.INIT_DIR, pos);
+        // glMatrix.vec3.scale(this.INIT_DIR, this.INIT_DIR, -1);
 
-        this.aperture = aperture;
+        // this.INIT_UP = glMatrix.vec3.create();
+        // glMatrix.vec3.normalize(this.INIT_UP, up);
+        
         this.fov = fov;
-
-        this.dir = glMatrix.vec3.create();
-        glMatrix.vec3.sub(this.dir, lookAt, pos);
-        let fl = glMatrix.vec3.length(this.dir);
-        glMatrix.vec3.normalize(this.dir, this.dir);
-
-        this.up = glMatrix.vec3.clone(up);
-        this.resetBasis();
+        this.aperture = aperture;
+        this.focalLength = focalLength;
+        
+        this.orientation = glMatrix.quat.create();
     }
 
-    resetBasis(){
+    get INIT_DIR() {
+        return glMatrix.vec3.fromValues(0, 0, -1);
+    }
+
+    get INIT_UP() {
+        return glMatrix.vec3.fromValues(0, 1, 0);
+    }
+
+    get up(){
         // Basis vectors will be scaled according to aspect ratio and FOV
-        let dir = glMatrix.vec3.create();
-        glMatrix.vec3.sub(dir, this.lookAt, this.pos);
-        let fl = glMatrix.vec3.length(dir);
-        const height = 2 * fl * Math.tan(this.fov / 2);
+        const height = 2 * this.focalLength * Math.tan(this.fov / 2);
+
+        let up = glMatrix.vec3.clone(this.INIT_UP);
+        glMatrix.vec3.transformQuat(up, up, this.orientation);
+        glMatrix.vec3.scale(up, up, height);
+        return up;
+    }
+
+    get dir(){
+        let dir = glMatrix.vec3.clone(this.INIT_DIR);
+        glMatrix.vec3.transformQuat(dir, dir, this.orientation);
+        return dir;
+    }
+
+    get right(){
+        // Basis vectors will be scaled according to aspect ratio and FOV
+        const height = 2 * this.focalLength * Math.tan(this.fov / 2);
         const width = gl.viewportWidth / gl.viewportHeight * height;
 
-        glMatrix.vec3.normalize(this.up, this.up);
+        let right = glMatrix.vec3.create();
+        glMatrix.vec3.cross(right, this.INIT_DIR, this.INIT_UP);
+        glMatrix.vec3.transformQuat(right, right, this.orientation);
+        glMatrix.vec3.scale(right, right, width);
 
-        this.right = glMatrix.vec3.create();
-        glMatrix.vec3.cross(this.right, this.dir, this.up);
-        glMatrix.vec3.scale(this.right, this.right, width);
-
-        glMatrix.vec3.scale(this.up, this.up, height);
+        return right;
     }
 
-    setFocalLength(fl){
-        let lookAt = glMatrix.vec3.create();
-        glMatrix.vec3.sub(lookAt, this.lookAt, this.pos);
-        glMatrix.vec3.normalize(lookAt, lookAt);
-        glMatrix.vec3.scale(lookAt, lookAt, fl);
-        glMatrix.vec3.add(this.lookAt, lookAt, this.pos);
+    get lookAt(){
+        let lookAt = this.dir;
+        glMatrix.vec3.scale(lookAt, lookAt, -(this.zoom - this.focalLength));
 
-        this.resetBasis();
+        return lookAt;
+    }
+
+    get pos(){
+        let pos = this.dir;
+        glMatrix.vec3.scale(pos, pos, -this.zoom);
+        return pos;
     }
 }

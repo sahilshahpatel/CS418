@@ -286,7 +286,6 @@ class Renderer{
     reset(){
         // Setting frameNum to 0 will make the uPreviousFrameWeight 0 which resets the shader
         this.frameNum = 0;
-        this.frameTimes = [];
     }
 
     createShaderProgram(vertexShader, fragmentShader){

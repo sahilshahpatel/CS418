@@ -62,13 +62,11 @@ window.onload = function(){
 
     /* Create camera */
     camera = new Camera(
-        glMatrix.vec3.fromValues(1, 3, 7),      // Camera pos
-        glMatrix.vec3.fromValues(0, 0, 0),      // LookAt point
+        glMatrix.vec3.fromValues(1, 3, 7),      // Position
         glMatrix.vec3.fromValues(0, 1, 0),      // Up vector
         Math.PI/4,                              // FOV
         parseFloat(apertureSlider.value),       // Aperture
-        gl.viewportWidth,
-        gl.viewportHeight
+        7,                                      // Focal length
     );
 
     // Bunny mesh has +Z as up and is too big
@@ -83,23 +81,43 @@ window.onload = function(){
         /* Render object */
         renderer = new Renderer(pathTracer);
         renderer.init().then(() => renderer.start());
-    });
+
+        /* Attach mouse controls */
+        let mousedown = false;
+        let angleX = 0;
+        let angleY = 0;
+        canvas.addEventListener("mousedown", () => { mousedown = true; });
+        document.addEventListener("mouseup", () => { mousedown = false; });
+        canvas.addEventListener("mousemove", e => {
+            if(!mousedown) { return; }
+
+            let k = 1; // View movement speed
+            angleX -= k * e.movementY;
+            angleY -= k * e.movementX;
+
+            let quat = glMatrix.quat.create();
+            glMatrix.quat.fromEuler(quat, angleX, angleY, 0);
+            camera.orientation = quat;
+            
+            renderer.reset();
+        });
+    });    
 
     /* Attach UI Controls */
-    bounceLimitSlider.oninput = () => {
-        pathTracer.bounceLimit = parseInt(bounceLimitSlider.value);
+    bounceLimitSlider.addEventListener("input", () => {
+        renderer.pathTracer.bounceLimit = parseInt(bounceLimitSlider.value);
         renderer.reset();
-    }
+    });
 
-    apertureSlider.oninput = () => {
+    apertureSlider.addEventListener("input", () => {
         camera.aperture = parseFloat(apertureSlider.value);
         renderer.reset();
-    }
+    });
 
-    focalLengthSlider.oninput = () => {
-        camera.setFocalLength(parseFloat(focalLengthSlider.value));
+    focalLengthSlider.addEventListener("input", () => {
+        camera.focalLength = parseFloat(focalLengthSlider.value);
         renderer.reset();
-    }
+    });
 }
 
 /**
