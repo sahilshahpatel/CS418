@@ -63,9 +63,15 @@
                             <label for="focalLength" class="form-label">Camera Focal Length</label>
                             <input id="focalLength" type="range" min="0.01" max="10" step="0.01" value="1" class="form-range">      
                         </div>
-                        <div class="col d-flex justify-content-between">
-                            <label for="autoOrbit" class="form-label">Enable Auto-Orbit</label>
-                            <input id="autoOrbit" type="checkbox" checked>
+                        <div class="col">
+                            <div class="d-flex justify-content-between">
+                                <label for="autoOrbit" class="form-label">Auto-Orbit Speed</label>
+                                <div>
+                                    <label for="autoOrbitEnable" class="form-label">(enable)</label>
+                                    <input id="autoOrbitEnable" type="checkbox" class="form-checkbox">
+                                </div>
+                            </div>
+                            <input id="autoOrbit" type="range" min="0" max="100" step="0.01" value="10" class="form-range">
                         </div>
                     </div>
                 </div>

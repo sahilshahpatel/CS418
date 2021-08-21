@@ -275,7 +275,7 @@ class Renderer{
         this.update(time);
         this.render();
 
-        let dt = this.frameTimes[this.frameTimes.length - 2] - time;
+        let dt = (this.frameTimes[this.frameTimes.length - 2] - time) / 1e3;
         callback(time, dt);
 
         this.requestAnimationFrameID = requestAnimationFrame(time => this.animate(time, callback));

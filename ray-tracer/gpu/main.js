@@ -7,7 +7,8 @@ window.onload = function(){
     let bounceLimitSlider = document.getElementById('bounceLimit');
     let apertureSlider = document.getElementById('aperture');
     let focalLengthSlider = document.getElementById('focalLength');
-    let autoOrbitCheckbox = document.getElementById('autoOrbit');
+    let autoOrbitSlider = document.getElementById('autoOrbit');
+    let autoOrbitCheckbox = document.getElementById('autoOrbitEnable');
 
     /* Create webgl context */
     let canvas = document.getElementById('canvas');
@@ -116,8 +117,9 @@ window.onload = function(){
         renderer.init().then(() => {
             mouseupTime = performance.now();
             renderer.start((time, dt) => {
-                if(!mousedown && autoOrbitCheckbox.checked && time - mouseupTime > 2000){
-                    camera.angleY -= 10e-3 * dt;
+                let speed = parseFloat(autoOrbitSlider.value);
+                if(!mousedown && autoOrbitCheckbox.checked && speed > 0 && time - mouseupTime > 2000){
+                    camera.angleY -= speed * dt;
                     renderer.reset();
                 }
             });
@@ -138,6 +140,10 @@ window.onload = function(){
     focalLengthSlider.addEventListener("input", () => {
         camera.focalLength = parseFloat(focalLengthSlider.value);
         renderer.reset();
+    });
+
+    autoOrbitCheckbox.addEventListener("input", () => {
+        autoOrbitSlider.disabled = !autoOrbitCheckbox.checked;
     });
 }
 
