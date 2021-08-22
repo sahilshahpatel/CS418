@@ -26,9 +26,6 @@
 
         <!-- Utilities -->
         <script src="../util.js"></script>
-
-        <!-- Main -->
-        <script src="main.js"></script>
     </head>
     <body>
         <div class = "container overflow-hidden mt-5">
@@ -36,11 +33,27 @@
                 <div class="col-lg-8 mb-3">
                     <div class="card">
                         <div class="card-body">
-                            <canvas id="canvas" width="800" height="500" class="card-img mb-2"></canvas>
-                            <div>
-                                <span class="bg-primary text-white ps-2 pe-2 pt-1 pb-1 rounded">
+                            <div style="position: relative">
+                                <canvas id="canvas" width="800" height="500" class="card-img mb-2"></canvas>
+                                <div id="canvasLoader" class="d-flex align-items-center justify-content-center w-100 h-100 bg-body" style="position: absolute; top: 0; left: 0;">
+                                    <p>Loading...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <div class="bg-primary text-white ps-2 pe-2 pt-1 pb-1 rounded d-flex align-items-center">
                                     <span>FPS: <span id = "fps">0.00</span></span>
-                                </span>
+                                </div>
+
+                                <div class="input-group" style="width: auto">
+                                    <label class="input-group-prepend input-group-text" for="sceneSelector">Scene:</label>
+                                    <select class="form-select" id="sceneSelector">
+                                        <option value="spheres" selected>Spheres</option>
+                                        <option value="bunny" class="link-danger" title="Warning: Requires higher-end GPU" disabled>
+                                            Stanford Bunny
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -71,11 +84,14 @@
                                     <input id="autoOrbitEnable" type="checkbox" class="form-checkbox">
                                 </div>
                             </div>
-                            <input id="autoOrbit" type="range" min="0" max="100" step="0.01" value="10" class="form-range">
+                            <input id="autoOrbit" type="range" min="0" max="100" step="0.01" value="10" class="form-range" disabled>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Main -->
+        <script src="main.js"></script>
     </body>
 </html>

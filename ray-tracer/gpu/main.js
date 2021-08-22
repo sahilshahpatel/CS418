@@ -9,6 +9,9 @@ window.onload = function(){
     let focalLengthSlider = document.getElementById('focalLength');
     let autoOrbitSlider = document.getElementById('autoOrbit');
     let autoOrbitCheckbox = document.getElementById('autoOrbitEnable');
+    let sceneSelector = document.getElementById('sceneSelector');
+    let canvasLoader = document.getElementById('canvasLoader');
+
 
     /* Create webgl context */
     let canvas = document.getElementById('canvas');
@@ -23,8 +26,10 @@ window.onload = function(){
     let matSteel = new Metal(glMatrix.vec3.fromValues(0.75, 0.75, 0.75), 0);
     let matNormals = new Normals();
 
-    /* Create scene */
-    let objects = [
+    /* Create scenes */
+    let scenes = {}; // Object keys should match sceneSelector options' values
+
+    scenes.spheres = [
         new Plane(
             glMatrix.vec3.fromValues(0, -1, 0),
             glMatrix.vec3.fromValues(0, 1, 0),
@@ -63,6 +68,22 @@ window.onload = function(){
         ),
     ];
 
+    // Bunny mesh has +Z as up and is too big
+    let bunnyMatrix = glMatrix.mat4.create();
+    glMatrix.mat4.fromXRotation(bunnyMatrix, -Math.PI/2);
+    glMatrix.mat4.scale(bunnyMatrix, bunnyMatrix, glMatrix.vec3.fromValues(0.03, 0.03, 0.03));
+    let bunny = new STLMesh('bunny.stl', bunnyMatrix, matBlue);
+    bunny.init().then(() => {
+        scenes.bunny = bunny.triangles.concat(
+            new Plane(
+                glMatrix.vec3.fromValues(0, 0, 0),
+                glMatrix.vec3.fromValues(0, 1, 0),
+                matGray
+            )
+        );
+        sceneSelector.children[1].disabled = false;
+    });
+
     /* Create camera */
     camera = new Camera(
         9,                                      // Zoom
@@ -96,25 +117,22 @@ window.onload = function(){
         renderer.reset();
     });
 
+    // Set up nice initial camera view
+    camera.angleX = -35;
+    camera.angleY = 102;
 
-    // Bunny mesh has +Z as up and is too big
-    let bunnyMatrix = glMatrix.mat4.create();
-    glMatrix.mat4.fromXRotation(bunnyMatrix, -Math.PI/2);
-    glMatrix.mat4.scale(bunnyMatrix, bunnyMatrix, glMatrix.vec3.fromValues(0.03, 0.03, 0.03));
-    let bunny = new STLMesh('bunny.stl', bunnyMatrix, matBlue);
-    bunny.init().then(() => {
-        // We actually won't use the bunny here because my GPU can only barely handle it with the current BVH
-        // objects = objects.concat(bunny.triangles);
+    let setup = scene => {
+        // Add loading spinner
+        canvasLoader.classList.remove('visually-hidden');
 
-        let pathTracer = new PathTracer(objects, camera, parseInt(bounceLimitSlider.value));
-
-        // Set up nice initial camera view
-        camera.angleX = -35;
-        camera.angleY = 102;
+        let pathTracer = new PathTracer(scene, camera, parseInt(bounceLimitSlider.value));
 
         /* Render object */
         renderer = new Renderer(pathTracer);
         renderer.init().then(() => {
+            // Remove loading spinner
+            canvasLoader.classList.add('visually-hidden');
+
             mouseupTime = performance.now();
             renderer.start((time, dt) => {
                 let speed = parseFloat(autoOrbitSlider.value);
@@ -124,7 +142,8 @@ window.onload = function(){
                 }
             });
         });
-    });    
+    }
+    setup(scenes[sceneSelector.value]);
 
     /* Attach UI Controls */
     bounceLimitSlider.addEventListener("input", () => {
@@ -144,6 +163,10 @@ window.onload = function(){
 
     autoOrbitCheckbox.addEventListener("input", () => {
         autoOrbitSlider.disabled = !autoOrbitCheckbox.checked;
+    });
+
+    sceneSelector.addEventListener("input", e => {
+        setup(scenes[e.target.value]);
     });
 }
 
